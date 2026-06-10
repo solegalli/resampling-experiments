@@ -106,7 +106,7 @@ def undersample_data(undersampler, X, y, scale):
 
 
 def train_model_w_undersampling(
-    model, params, xtrainu, ytrainu, xtest, ytest, Xu, yu, scoring="roc_auc"
+    model, params, xtrainu, ytrainu, xtest, ytest, Xu, yu, scoring="roc_auc", n_iter=100
 ):
     """
     Tune and train a model on pre-undersampled data.
@@ -140,7 +140,6 @@ def train_model_w_undersampling(
     if scoring not in valid_scorings:
         raise ValueError(f"scoring must be one of {valid_scorings}, got '{scoring}'")
 
-    n_iter = 100
     param_list = list(ParameterSampler(params, n_iter=n_iter, random_state=42))
 
     # --- Round 1: screen all candidates with n_estimators=10 ---
