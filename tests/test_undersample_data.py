@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.datasets import make_classification
+from functions.instance_hardness import InstanceHardnessUnderSampler
 
 from functions.cv_undersamplers import undersample_data
 
@@ -119,3 +120,15 @@ def test_scale_true_returns_original_scale(imbalanced_data):
     # check each fold is not scaled
     for fold in xtrainu:
         assert fold.max() > 1 or fold.min() < 0
+
+
+def test_instance_hardness_undersampler(imbalanced_data):
+    X, y = imbalanced_data
+    sampler = InstanceHardnessUnderSampler(threshold=0.4, random_state=10)
+    xtrainu, ytrainu, xtest, ytest, Xu, yu, stats = undersample_data(
+        sampler, X, y, scale=False
+    )
+    assert len(Xu) < len(X)
+    assert len(yu) < len(y)
+    assert "original_size" in stats
+    assert "undersampled_size" in stats
