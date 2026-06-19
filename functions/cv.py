@@ -1,9 +1,30 @@
+import numpy as np
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingRandomSearchCV, RandomizedSearchCV
 
 
+def get_sample_weights(y_train):
+    """
+    Compute sample weight arrays for cost-sensitive learning.
+
+    Returns a dict mapping integer weight -> sample weight array, where the
+    minority class (label 1) receives the weight and the majority class gets 1.
+    Candidates are IR, IR//2, and IR//3 (integers >= 2, duplicates dropped).
+    """
+    IR = int(round((y_train == 0).sum() / (y_train == 1).sum()))
+    candidates = dict.fromkeys(w for w in (IR, IR // 2, IR // 3) if w >= 2)
+    return {w: np.where(y_train == 1, w, 1).astype(int) for w in candidates}
+
+
 def train_model(
-    estimator, params, X_train, y_train, scoring="roc_auc", refit=True, n_jobs=-1
+    estimator,
+    params,
+    X_train,
+    y_train,
+    scoring="roc_auc",
+    refit=True,
+    n_jobs=-1,
+    sample_weight=None,
 ):
     """
     Train classifier with hyperparameter tuning
@@ -34,7 +55,7 @@ def train_model(
         n_jobs=n_jobs,
     )
 
-    search.fit(X_train, y_train)
+    search.fit(X_train, y_train, sample_weight=sample_weight)
     return search
 
 
