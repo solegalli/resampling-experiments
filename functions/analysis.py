@@ -51,8 +51,41 @@ def create_df(scores_dict, dataset, models):
 
 
 def best_performance_summary(
-    scores_dict, datasets, metric, metric_std,
+    scores_dict,
+    datasets,
+    metric,
+    metric_std,
 ):
+    """
+    Build a styled summary DataFrame comparing baseline models against their
+    best cost-sensitive learning (CSL) or resampled variant for a given metric.
+
+    For each dataset and base model, finds the CSL/resampled variant with the highest
+    metric value, computes the difference, and applies conditional highlighting:
+    - Orange: the single highest metric value across all models for that dataset
+      (in either the baseline or CSL/resampled column).
+    - Green: the CSL/resampled improvement exceeds the standard deviation of both the
+      baseline and the CSL/resampled variant (i.e. likely a meaningful gain).
+    - Yellow: the CSL/resampled improvement is positive but within the error bands.
+
+    Parameters
+    ----------
+    scores_dict : dict
+        Nested dict keyed by dataset name, then model name, containing
+        evaluation score arrays as produced by the training pipeline.
+    datasets : list of str
+        Ordered list of dataset names to include in the summary.
+    metric : str
+        Name of the metric column to compare (e.g. 'roc', 'ap', 'brier').
+    metric_std : str
+        Name of the corresponding standard deviation column (e.g. 'roc_std').
+
+    Returns
+    -------
+    pandas.io.formats.style.Styler
+        Styled DataFrame with one row per (dataset, base model) combination.
+    """
+
     base_models = ["rf", "ada", "gbm", "cat", "lgbm", "xgb"]
 
     rows = []
