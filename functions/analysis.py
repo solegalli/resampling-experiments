@@ -55,6 +55,7 @@ def best_performance_summary(
     datasets,
     metric,
     metric_std,
+    factor = 3,
 ):
     """
     Build a styled summary DataFrame comparing baseline models against their
@@ -64,9 +65,12 @@ def best_performance_summary(
     metric value, computes the difference, and applies conditional highlighting:
     - Orange: the single highest metric value across all models for that dataset
       (in either the baseline or CSL/resampled column).
-    - Green: the CSL/resampled improvement exceeds the standard deviation of both the
-      baseline and the CSL/resampled variant (i.e. likely a meaningful gain).
-    - Yellow: the CSL/resampled improvement is positive but within the error bands.
+    - Red: the CSL improvement exceeds `factor` times the standard deviation of
+      both the baseline and the CSL variant.
+    - Green: the CSL improvement exceeds 1 times the standard deviation of
+      both the baseline and the CSL variant, but not `factor` times.
+    - Yellow: the CSL improvement is positive but does not exceed 1 standard
+      deviation of both models.
 
     Parameters
     ----------
@@ -79,6 +83,9 @@ def best_performance_summary(
         Name of the metric column to compare (e.g. 'roc', 'ap', 'brier').
     metric_std : str
         Name of the corresponding standard deviation column (e.g. 'roc_std').
+    factor : int
+        Multiplier applied to the baseline std for the red threshold. Default is 3,
+        meaning red appears when the improvement exceeds 3 * std.
 
     Returns
     -------
@@ -128,8 +135,10 @@ def best_performance_summary(
         styles = [""] * len(row)
         diff = row[f"{metric}_diff"]
         std = row[metric_std]
-        std_w = row[f"best_csl_{metric_std}"]
-        if diff > std and diff > std_w:
+        std_csl = row[f"best_csl_{metric_std}"]
+        if diff > factor * std and diff > factor * std_csl:
+            styles[diff_idx] = "background-color: red"
+        elif diff > std and diff > std_csl:
             styles[diff_idx] = "background-color: lightgreen"
         elif diff > 0:
             styles[diff_idx] = "background-color: yellow"
