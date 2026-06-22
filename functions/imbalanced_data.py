@@ -36,11 +36,11 @@ DATASETS_IMBALANCED = ["htru2", "creditcard"]
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".data_cache"
 
-# The full credit-card dataset has 284,807 rows; the standard ensembles with
-# successive-halving tuning are intractable at that size. We keep every fraud case
-# and a fixed random sample of this many legitimate transactions, which preserves
-# the full minority and a severe imbalance (~2.4% positive) while staying tractable.
-CREDITCARD_N_NEGATIVES = 20_000
+# Use the full credit-card dataset (284,807 rows, ~0.17% positive). Set this to an
+# int to down-sample the legitimate class for faster (manual-halving) tuning, e.g.
+# CREDITCARD_N_NEGATIVES = 20_000 keeps every fraud case at ~2.4% positive. None
+# uses the full dataset.
+CREDITCARD_N_NEGATIVES = None
 
 
 def _cache_path(name):
@@ -97,23 +97,24 @@ def _load_creditcard():
     Features are 28 PCA components plus the transaction amount; the OpenML
     version already excludes the raw time column. No missing values.
 
-    All 492 fraud cases are kept; the legitimate class is down-sampled to
-    ``CREDITCARD_N_NEGATIVES`` (random_state=0) so the halving-search tuning is
-    tractable. This keeps the full minority and a severe imbalance (~2.4% positive,
-    down from the original 0.17%).
+    By default the full dataset is used (~0.17% positive). If
+    ``CREDITCARD_N_NEGATIVES`` is set, all 492 fraud cases are kept and the
+    legitimate class is down-sampled to that many rows (random_state=0) for faster
+    tuning.
     """
     X, y = _fetch_openml("creditcard", 1597)
     target = pd.to_numeric(y).astype(int).to_numpy()
     X = X.apply(pd.to_numeric).reset_index(drop=True)
 
-    pos_idx = np.flatnonzero(target == 1)
-    neg_idx = np.flatnonzero(target == 0)
-    n_neg = min(CREDITCARD_N_NEGATIVES, neg_idx.size)
-    neg_keep = np.random.default_rng(0).choice(neg_idx, size=n_neg, replace=False)
-    keep = np.sort(np.concatenate([pos_idx, neg_keep]))
+    if CREDITCARD_N_NEGATIVES is not None:
+        pos_idx = np.flatnonzero(target == 1)
+        neg_idx = np.flatnonzero(target == 0)
+        n_neg = min(CREDITCARD_N_NEGATIVES, neg_idx.size)
+        neg_keep = np.random.default_rng(0).choice(neg_idx, size=n_neg, replace=False)
+        keep = np.sort(np.concatenate([pos_idx, neg_keep]))
+        X = X.iloc[keep].reset_index(drop=True)
+        target = target[keep]
 
-    X = X.iloc[keep].reset_index(drop=True)
-    target = target[keep]
     return _split(X, target)
 
 
