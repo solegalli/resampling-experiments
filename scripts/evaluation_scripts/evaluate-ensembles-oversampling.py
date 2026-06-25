@@ -1,0 +1,63 @@
+"""
+Evaluate pre-trained classifiers trained with oversampling on various imbalanced datasets.
+
+Loads each model saved by train-ensembles-oversampling.py, evaluates it on the
+test set using bootstrapped samples, and stores one results pickle per oversampler
+in the models/oversampling folder.
+"""
+
+import pickle
+import sys
+import warnings
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
+import joblib
+from tqdm import tqdm
+
+from configs.ensemble_models import estimator_dict
+from functions.data import DATASETS_LS, load_dataset
+from functions.evaluation import evaluate_model_on_test_set
+
+warnings.filterwarnings("ignore", message=".*X does not have valid feature names.*", category=UserWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
+OVERSAMPLERS = [
+    "ros_equal",
+    "ros_half",
+    "ros_shrink01_equal",
+    "ros_shrink01_half",
+    "ros_shrink1_equal",
+    "ros_shrink1_half",
+    "smote_equal",
+    "smote_half",
+    "adasyn_equal",
+    "adasyn_half",
+    "bsmote1_equal",
+    "bsmote1_half",
+    "bsmote2_equal",
+    "bsmote2_half",
+]
+
+models_dir = REPO_ROOT / "models" / "oversampling"
+
+for oversampler in tqdm(OVERSAMPLERS, desc="Oversamplers"):
+    scores_dict = {}
+
+    for dataset in tqdm(DATASETS_LS, desc=oversampler, leave=False):
+        _, X_test, _, y_test = load_dataset(dataset)
+
+        scores_dict[dataset] = {}
+
+        for estimator in estimator_dict:
+            model = joblib.load(
+                models_dir / f"{dataset}_{estimator}_{oversampler}.pkl"
+            )
+            scores_dict[dataset][f"{estimator}_{oversampler}"] = (
+                evaluate_model_on_test_set(model, X_test, y_test)
+            )
+
+    with open(models_dir / f"results_{oversampler}", "wb") as fp:
+        pickle.dump(scores_dict, fp)
