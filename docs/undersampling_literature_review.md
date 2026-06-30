@@ -4,9 +4,11 @@ A catalog of the undersampling literature for the paper's related-work / discuss
 focused on three questions per paper: (1) is there a **no-resampling control**
 (comparison against a model trained on the original imbalanced data, not only
 against other resamplers)? (2) which **metrics** are used? (3) is the **decision
-threshold tuned**, or left at the implicit default? For the head-to-head
-comparison studies, a fourth axis is added: do they report the **dispersion** of
-the estimates, or only point values?
+threshold tuned**, or left at the implicit default? Each row also records the
+**ML model** the resampler is paired with, since whether resampling helps *strong*
+learners (random forests, XGBoost) as opposed to weak ones is central to the
+argument. For the head-to-head comparison studies, a further axis is added: do
+they report the **dispersion** of the estimates, or only point values?
 
 Scope is undersampling only; the oversampling side is covered by "Stop oversampling
 for class imbalance," so it is not duplicated here. Entries are marked by confidence:
@@ -17,37 +19,37 @@ without reading it).
 
 ## Catalog
 
-| Paper | Year | Venue | Undersampler(s) | No-resampling control? | Metrics | Threshold tuned? | Link | Confidence |
-|---|---|---|---|---|---|---|---|---|
-| Hart | 1968 | IEEE Trans. Inf. Theory | CNN | N/A | NN error | N/A (NN rule) | [S2](https://www.semanticscholar.org/paper/7e67c9964a9defedd4f9dbe50f6e38ee58d52d62) | identified |
-| Wilson | 1972 | IEEE Trans. SMC | ENN (basis of RENN, AllKNN, NCR) | N/A (not an imbalance study) | NN risk / error rate | N/A | [10.1109/TSMC.1972.4309137](https://ieeexplore.ieee.org/document/4309137/) | verified |
-| Tomek | 1976 | IEEE Trans. SMC | Tomek links | N/A (not imbalance-framed) | unclear (NN error) | N/A | [10.1109/TSMC.1976.4309452](https://ieeexplore.ieee.org/document/4309452) | verified |
-| Kubat & Matwin | 1997 | ICML | OSS (+ CNN, Tomek) | unclear | **G-mean** (explicitly rejects plain accuracy) | unclear | [dblp](https://dblp.org/rec/conf/icml/KubatM97.html) | verified (origin); control/threshold unclear |
-| Provost & Fawcett | 2001 | Machine Learning | (accuracy critique, not an undersampler) | N/A | accuracy critique; advocates ROC | N/A | [10.1023/A:1007601015854](https://link.springer.com/article/10.1023/A:1007601015854) | verified |
-| Laurikkala | 2001 | AIME (Springer LNCS) | NCR/NCL (uses ENN); vs random + OSS | **YES** (original-data baseline, explicit numbers) | accuracy, TPR, TNR, TPRC — **no AUC/F1/G-mean/MCC** | No / implicit | [10.1007/3-540-48229-6_9](https://link.springer.com/chapter/10.1007/3-540-48229-6_9) | verified (full text) |
-| Mani & Zhang | 2003 | ICML workshop | NearMiss-1/2/3 | unclear | unclear | unclear | [bibbase](https://bibbase.org/network/publication/zhang-mani-knnapproachtounbalanceddatadistributionsacasestudyinvolvinginformationextraction) | identified |
-| He & Garcia | 2009 | IEEE TKDE | survey (RUS, NearMiss, Tomek, CNN, OSS, NCR) | n/a (survey) | discusses skew-aware metrics | n/a | [IEEE](https://ieeexplore.ieee.org/document/5128907) | identified (named in scope; not independently verified) |
-| Yen & Lee | 2009 | Expert Syst. Appl. | cluster-based undersampling | unclear | unclear | unclear | [KEEL pdf](https://sci2s.ugr.es/keel/pdf/specific/articulo/yen_cluster_2009.pdf) | identified |
-| Smith, Martinez & Giraud-Carrier | 2014 | Machine Learning | Instance Hardness (basis of IHT) | unclear | unclear | unclear | [10.1007/s10994-014-5440-5](https://link.springer.com/article/10.1007/s10994-014-5440-5) | identified |
-| Branco, Torgo & Ribeiro | 2016 | ACM Comput. Surv. | survey (full undersampler taxonomy) | treats **threshold adjustment as equivalent** to resampling (via Maloof 2003) | rejects accuracy; F-measure, G-mean, ROC-AUC, PR curves, IBA (no MCC) | threshold = first-class method | [10.1145/2907070](https://dl.acm.org/doi/10.1145/2907070) | verified (full text) |
-| Guo et al. | 2017 | Expert Syst. Appl. | survey (527 papers) | unclear | unclear | unclear | [10.1016/j.eswa.2016.12.035](https://www.sciencedirect.com/science/article/pii/S0957417416307175) | metadata only |
-| Lemaître, Nogueira & Aridas | 2017 | JMLR | imbalanced-learn (all in-scope undersamplers) | N/A (software) | ships G-mean etc. | N/A | [JMLR 18/16-365](https://jmlr.org/papers/v18/16-365.html) | verified |
-| van den Goorbergh et al. | 2022 | JAMIA | RandomUnderSampler (+ ROS, SMOTE) | **YES** (no-correction baseline) | ROC-AUC + **calibration** (intercept/slope) | addresses calibration/threshold | [PMC9382395](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9382395/) | verified |
-| Piccininni et al. | 2024 | J Biomed Inform | RandomUnderSampler, **NearMiss** (+ ROS, SMOTE) | **YES** (no-correction comparator) | AUROC + **calibration** | calibration focus | [10.1016/j.jbi.2024.104666](https://www.sciencedirect.com/science/article/pii/S1532046424000844) | verified |
-| McDermott et al. | 2024 | NeurIPS | (metric methodology, not an undersampler) | n/a | AUROC vs AUPRC analysis | n/a | [arXiv:2401.06091](https://arxiv.org/abs/2401.06091) | verified |
+| Paper | Year | Venue | Undersampler(s) | ML model | No-resampling control? | Metrics | Threshold tuned? | Link | Confidence |
+|---|---|---|---|---|---|---|---|---|---|
+| Hart | 1968 | IEEE Trans. Inf. Theory | CNN | 1-NN | N/A | NN error | N/A (NN rule) | [S2](https://www.semanticscholar.org/paper/7e67c9964a9defedd4f9dbe50f6e38ee58d52d62) | identified |
+| Wilson | 1972 | IEEE Trans. SMC | ENN (basis of RENN, AllKNN, NCR) | k-NN | N/A (not an imbalance study) | NN risk / error rate | N/A | [10.1109/TSMC.1972.4309137](https://ieeexplore.ieee.org/document/4309137/) | verified |
+| Tomek | 1976 | IEEE Trans. SMC | Tomek links | 1-NN | N/A (not imbalance-framed) | unclear (NN error) | N/A | [10.1109/TSMC.1976.4309452](https://ieeexplore.ieee.org/document/4309452) | verified |
+| Kubat & Matwin | 1997 | ICML | OSS (+ CNN, Tomek) | unclear | unclear | **G-mean** (explicitly rejects plain accuracy) | unclear | [dblp](https://dblp.org/rec/conf/icml/KubatM97.html) | verified (origin); control/threshold unclear |
+| Provost & Fawcett | 2001 | Machine Learning | (accuracy critique, not an undersampler) | N/A | N/A | accuracy critique; advocates ROC | N/A | [10.1023/A:1007601015854](https://link.springer.com/article/10.1023/A:1007601015854) | verified |
+| Laurikkala | 2001 | AIME (Springer LNCS) | NCR/NCL (uses ENN); vs random + OSS | 3-NN, C4.5 | **YES** (original-data baseline, explicit numbers) | accuracy, TPR, TNR, TPRC — **no AUC/F1/G-mean/MCC** | No / implicit | [10.1007/3-540-48229-6_9](https://link.springer.com/chapter/10.1007/3-540-48229-6_9) | verified (full text) |
+| Mani & Zhang | 2003 | ICML workshop | NearMiss-1/2/3 | k-NN | unclear | unclear | unclear | [bibbase](https://bibbase.org/network/publication/zhang-mani-knnapproachtounbalanceddatadistributionsacasestudyinvolvinginformationextraction) | identified |
+| He & Garcia | 2009 | IEEE TKDE | survey (RUS, NearMiss, Tomek, CNN, OSS, NCR) | N/A (survey) | n/a (survey) | discusses skew-aware metrics | n/a | [IEEE](https://ieeexplore.ieee.org/document/5128907) | identified (named in scope; not independently verified) |
+| Yen & Lee | 2009 | Expert Syst. Appl. | cluster-based undersampling | unclear | unclear | unclear | unclear | [KEEL pdf](https://sci2s.ugr.es/keel/pdf/specific/articulo/yen_cluster_2009.pdf) | identified |
+| Smith, Martinez & Giraud-Carrier | 2014 | Machine Learning | Instance Hardness (basis of IHT) | many (hardness from a learner panel) | unclear | unclear | unclear | [10.1007/s10994-014-5440-5](https://link.springer.com/article/10.1007/s10994-014-5440-5) | identified |
+| Branco, Torgo & Ribeiro | 2016 | ACM Comput. Surv. | survey (full undersampler taxonomy) | N/A (survey) | treats **threshold adjustment as equivalent** to resampling (via Maloof 2003) | rejects accuracy; F-measure, G-mean, ROC-AUC, PR curves, IBA (no MCC) | threshold = first-class method | [10.1145/2907070](https://dl.acm.org/doi/10.1145/2907070) | verified (full text) |
+| Guo et al. | 2017 | Expert Syst. Appl. | survey (527 papers) | N/A (survey) | unclear | unclear | unclear | [10.1016/j.eswa.2016.12.035](https://www.sciencedirect.com/science/article/pii/S0957417416307175) | metadata only |
+| Lemaître, Nogueira & Aridas | 2017 | JMLR | imbalanced-learn (all in-scope undersamplers) | N/A (software) | N/A (software) | ships G-mean etc. | N/A | [JMLR 18/16-365](https://jmlr.org/papers/v18/16-365.html) | verified |
+| van den Goorbergh et al. | 2022 | JAMIA | RandomUnderSampler (+ ROS, SMOTE) | logistic regression (clinical) | **YES** (no-correction baseline) | ROC-AUC + **calibration** (intercept/slope) | addresses calibration/threshold | [PMC9382395](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9382395/) | verified |
+| Piccininni et al. | 2024 | J Biomed Inform | RandomUnderSampler, **NearMiss** (+ ROS, SMOTE) | logistic + tree | **YES** (no-correction comparator) | AUROC + **calibration** | calibration focus | [10.1016/j.jbi.2024.104666](https://www.sciencedirect.com/science/article/pii/S1532046424000844) | verified |
+| McDermott et al. | 2024 | NeurIPS | (metric methodology, not an undersampler) | N/A | n/a | AUROC vs AUPRC analysis | n/a | [arXiv:2401.06091](https://arxiv.org/abs/2401.06091) | verified |
 
 ## Empirical comparison studies (resamplers vs a no-resampling baseline)
 
-These directly pit resamplers against a baseline, so all three axes plus
-**dispersion reported?** apply. Added from Sole's review of PR #10; the findings
-are her reading of the papers, not independently re-verified.
+These directly pit resamplers against a baseline, so all axes plus **dispersion
+reported?** apply. Added from Sole's review of PR #10; the findings are her reading
+of the papers, not independently re-verified.
 
-| Paper | Year | Venue | Methods / learners | Control? | Metrics | Threshold | Dispersion? | Finding | Link |
-|---|---|---|---|---|---|---|---|---|---|
-| Wainer | 2018 | arXiv | 10 US + 5 OS + ensembles + specialized; 58 datasets | **YES** (no-mitigation baseline) | accuracy, **AUC**, balanced acc, F1, G-mean, **MCC**, precision, recall | default 0.5 | **No** (one value / rank per dataset) | No single winner; depends on the metric. On **AUC, undersampling/oversampling/class-weight/baseline tie**; specialized ensembles lag. Baseline + class-weight good on AUC but poor on MCC. | [arXiv:1810.07168](https://arxiv.org/abs/1810.07168) |
-| Hasanin, Khoshgoftaar et al. | 2019 | J. Big Data | RUS + ROS; 2 datasets | **YES** (baseline) | AUC | n/a (AUC) | **Yes** (dataset 1) | Dataset 1: **with uncertainty, US/OS do not improve** (matches us). Dataset 2 (**SlowlorisBig**): US/OS do improve. | [10.1186/s40537-019-0274-4](https://link.springer.com/article/10.1186/s40537-019-0274-4) |
-| (class-weight medical study) | 2021 | Informatics in Medicine Unlocked | class weights vs unbalanced RF/XGBoost; 4 medical datasets (incl. Pima) | **YES** | ROC-AUC | n/a (AUC) | **No** | Class-weight **beats** the unbalanced models on ROC-AUC, notably on some datasets — but no uncertainty shown (a likely reason it disagrees with us). | [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S235291482100174X) (citation to confirm) |
-| Gurcan & Soylu | 2024 | Cancers | 19 resamplers (RUS, Tomek, NearMiss, ClusterCentroids, ENN, RENN, CNN, IHT, OSS, NCR + OS/hybrid) on RF, XGBoost + 8 | **YES** (baseline) | Accuracy, F1, **ROC-AUC** (mean of 3) | unstated (≈0.5) | **No** (ANOVA / Kruskal-Wallis only) | Claims resampling works (SMOTEENN + RF best); notable because it uses **strong learners** (RF/XGBoost), not only weak ones — but ROC-AUC point estimates, no dispersion. | [PMC11476323](https://pmc.ncbi.nlm.nih.gov/articles/PMC11476323/) |
+| Paper | Year | Venue | Resamplers | ML model | Control? | Metrics | Threshold | Dispersion? | Finding | Link |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Wainer | 2018 | arXiv | 10 US + 5 OS + ensembles + specialized (58 datasets, KEEL-style) | multiple classifiers | **YES** (no-mitigation baseline) | accuracy, **AUC**, balanced acc, F1, G-mean, **MCC**, precision, recall | default 0.5 | **No** (one value / rank per dataset) | No single winner; depends on the metric. On **AUC, undersampling/oversampling/class-weight/baseline tie**; specialized ensembles lag. Baseline + class-weight good on AUC but poor on MCC. | [arXiv:1810.07168](https://arxiv.org/abs/1810.07168) |
+| Hasanin, Khoshgoftaar et al. | 2019 | J. Big Data | RUS + ROS; 2 datasets | GBT (+ others), Spark ML | **YES** (baseline) | AUC | n/a (AUC) | **Yes** (dataset 1) | Dataset 1: **with uncertainty, US/OS do not improve** (matches us). Dataset 2 (**SlowlorisBig**): US/OS do improve. | [10.1186/s40537-019-0274-4](https://link.springer.com/article/10.1186/s40537-019-0274-4) |
+| (class-weight medical study) | 2021 | Informatics in Medicine Unlocked | class weights vs unbalanced; 4 medical datasets (incl. Pima) | **RF, XGBoost** | **YES** | ROC-AUC | n/a (AUC) | **No** | Class-weight **beats** the unbalanced models on ROC-AUC, notably on some datasets — but no uncertainty shown (a likely reason it disagrees with us). | [ScienceDirect](https://www.sciencedirect.com/science/article/pii/S235291482100174X) (citation to confirm) |
+| Gurcan & Soylu | 2024 | Cancers | 19 resamplers (RUS, Tomek, NearMiss, ClusterCentroids, ENN, RENN, CNN, IHT, OSS, NCR + OS/hybrid) | **RF, XGBoost** + 8 (Balanced RF, LR, SVC, MLP, DNN, Easy Ensemble, RUSBoost, Balanced Bagging) | **YES** (baseline) | Accuracy, F1, **ROC-AUC** (mean of 3) | unstated (≈0.5) | **No** (ANOVA / Kruskal-Wallis only) | Claims resampling works (SMOTEENN + RF best); notable because it uses **strong learners** (RF/XGBoost), not only weak ones — but ROC-AUC point estimates, no dispersion. | [PMC11476323](https://pmc.ncbi.nlm.nih.gov/articles/PMC11476323/) |
 
 ## Synthesis: the methodological gap
 
@@ -67,8 +69,9 @@ are her reading of the papers, not independently re-verified.
 
 - **~20 papers** here. The foundational/critique rows came from an adversarially-verified search; the four empirical comparison studies were added from Sole's review (her reading), and the Informatics in Medicine Unlocked row still needs its exact citation (authors/title) confirmed.
 - **SlowlorisBig (Hasanin 2019) is not publicly downloadable as-is** (a derived big-data subset from the Khoshgoftaar/FAU group). The Slowloris attack is, however, labelled in the public CICIDS2017 set (UNB CIC), from which a comparable severely-imbalanced Slowloris-vs-benign dataset can be built to test reproduction.
+- **ML-model cells for the older papers are best-effort:** the NN-rule papers (Hart/Wilson/Tomek) classify with the nearest-neighbour rule itself; OSS, Yen & Lee and the Smith hardness panel are not pinned to a specific classifier from the abstract and are marked unclear.
 - **Foundational cells are N/A or unclear by nature.** Tomek/Wilson/Hart have no probability threshold (NN rules) and predate AUC/PR reporting; do not upgrade those cells without reading the papers.
 - **Still to verify from primary sources:** He & Garcia (2009, the survey originally named — verification anchored on Branco 2016 instead), Mani & Zhang (NearMiss 2003), Smith et al. (Instance Hardness 2014), Hart (CNN 1968), Yen & Lee (cluster-based 2009). These need their control/metric/threshold cells filled from full text.
 - **Domain caveat:** the strongest no-control evidence (van den Goorbergh; Piccininni) is clinical risk-prediction with logistic/tree models and emphasises *random* undersampling + NearMiss. Generalisation to the informed undersamplers (ENN, Tomek, OSS, NCR, IHT, cluster-based) is plausible but not directly established by those two papers — a gap our own experiments help fill.
 
-*Generated from an adversarially-verified web search (5 angles, 24 sources fetched, 25 claims voted, 20 confirmed / 5 refuted). Treat "identified" rows as leads, not citations, until the full texts are read.*
+*Generated from an adversarially-verified web search (5 angles, 24 sources fetched, 25 claims voted, 20 confirmed / 5 refuted), plus four comparison studies and the ML-model column added from Sole's review. Treat "identified" rows as leads, not citations, until the full texts are read.*
