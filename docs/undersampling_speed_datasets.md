@@ -5,12 +5,15 @@ The undersampling-for-speed study (`scripts/training_scripts/train-undersampling
 enough for training time to matter and imbalanced enough that there is majority
 data to drop. We use four, spanning the imbalance/size spectrum.
 
-| dataset       | source            | n (total) | features | positive | role |
-|---------------|-------------------|-----------|----------|----------|------|
+| dataset       | source            | n (total) | features | % positive (minority) | role |
+|---------------|-------------------|-----------|----------|-----------------------|------|
 | creditcard    | OpenML id 1597    | 284,807   | 30       | ~0.17%   | huge, extreme imbalance — strongest speed case |
 | protein_homo  | KDD Cup 2004      | 145,751   | 74       | ~0.89%   | big, very imbalanced — strong speed case |
 | diabetes130   | UCI id 296        | ~101,766  | (encoded)| ~11%     | medium, moderate imbalance — modest speed case |
 | isolet        | UCI id 54         | 7,797     | 617      | ~7.7%    | small, high-dimensional — no speed case (contrast) |
+
+The **% positive** column is the share of rows in the minority (positive) class,
+so creditcard's ~0.17% means fewer than 1 in 500 rows are the positive class.
 
 `protein_homo` and `isolet` are loaded through `imblearn.datasets.fetch_datasets`,
 which downloads the imbalanced-learn benchmark collection from Zenodo. `creditcard`

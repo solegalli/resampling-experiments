@@ -54,6 +54,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from imblearn.datasets import fetch_datasets
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.metrics import average_precision_score, brier_score_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
@@ -112,8 +113,6 @@ def load_diabetes130():
 
 
 def load_imblearn(name):
-    from imblearn.datasets import fetch_datasets
-
     d = fetch_datasets()[name]
     X, y = _to_xy(d.data, (np.asarray(d.target) == 1))
     return train_test_split(X, y, test_size=0.3, random_state=SPLIT_STATE, stratify=y)
@@ -135,14 +134,14 @@ def fit_and_eval(make_clf, X_train, y_train, X_test, y_test, seed, sample_weight
     fit_time = time.perf_counter() - t0
     prob = clf.predict_proba(X_test)[:, 1]
     return {
-        "n_train": int(len(y_train)),
-        "n_pos": int(y_train.sum()),
-        "n_neg": int(len(y_train) - y_train.sum()),
-        "roc": float(roc_auc_score(y_test, prob)),
-        "ap": float(average_precision_score(y_test, prob)),
-        "brier": float(brier_score_loss(y_test, prob)),
-        "mean_prob": float(prob.mean()),
-        "fit_time_s": float(fit_time),
+        "n_train": len(y_train),
+        "n_pos": y_train.sum(),
+        "n_neg": len(y_train) - y_train.sum(),
+        "roc": roc_auc_score(y_test, prob),
+        "ap": average_precision_score(y_test, prob),
+        "brier": brier_score_loss(y_test, prob),
+        "mean_prob": prob.mean(),
+        "fit_time_s": fit_time,
     }
 
 
