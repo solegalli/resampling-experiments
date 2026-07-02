@@ -46,6 +46,18 @@ def test_datasets_are_imbalanced(loaded):
     assert 0 < pos_rate < 0.5, f"{name} is not imbalanced (pos_rate={pos_rate:.2f})"
 
 
+def test_diabetes130_drops_id_columns():
+    """encounter_id and patient_nbr are per-visit/patient identifiers, not
+    predictors, and must not reach the model."""
+    try:
+        X_train, X_test, _, _ = load_hard_dataset("diabetes130")
+    except (urllib.error.URLError, ConnectionError) as exc:
+        pytest.skip(f"could not fetch diabetes130: {exc}")
+    for col in ("encounter_id", "patient_nbr"):
+        assert col not in X_train.columns
+        assert col not in X_test.columns
+
+
 def test_unknown_dataset_raises():
     with pytest.raises(ValueError):
         load_hard_dataset("not_a_dataset")
