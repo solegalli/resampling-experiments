@@ -1,18 +1,10 @@
 # Strong-signal, severely imbalanced datasets
 
-These datasets are the **complement** of the hard datasets in
-`docs/hard_datasets.md`. The hard datasets are difficult because the features
-overlap the classes, so a standard ensemble is weak. The datasets here are the
+These datasets **complement** the hard datasets in
+`docs/hard_datasets.md`. The hard datasets are challenging because the features
+don't separate the classes well, so a machine learning models may struggle to discriminate among the classes. The datasets here are the
 opposite: a standard ensemble already discriminates the classes well
-(ROC-AUC > 0.9), but the positive class is **rare**.
-
-They exist to close the main caveat of the hard-dataset comparison. Resampling
-rebalances classes; it cannot create signal. The hard datasets therefore test
-the regime *least* favourable to resampling. These datasets test the regime
-*most* favourable to it -- severe class imbalance with learnable signal,
-including a tiny absolute minority -- so that the conclusion ("special ensembles
-do not beat standard ensembles at the optimal threshold") is tested where
-resampling has the best possible chance to help.
+(ROC-AUC > 0.9), but the positive class is extremely **rare**.
 
 They are loaded through `functions/imbalanced_data.py`:
 
