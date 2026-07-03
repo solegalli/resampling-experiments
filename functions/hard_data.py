@@ -24,9 +24,11 @@ Selection criteria
 Preprocessing mirrors :mod:`functions.data`: categorical variables are arbitrary
 ordinal-encoded, constant features are dropped, and the data is split 70/30 with
 ``random_state=0``. Missing values (absent from the original datasets but present
-here) are imputed so that the scikit-learn based estimators can be fitted:
-numeric columns with the median, categorical columns with an explicit "Missing"
-category. As in ``functions.data``, encoding/imputation is fit on the full data
+here) are handled so that the scikit-learn based estimators can be fitted:
+categorical columns get an explicit "Missing" category, and secom's numeric
+sensor gaps are flagged out of sample (EndTailImputer at 3x the feature maximum)
+rather than mean/median-imputed, so tree models can use "not measured" as a
+signal. As in ``functions.data``, encoding/imputation is fit on the full data
 before splitting; the resulting leakage is negligible and applied identically to
 every model, keeping the comparison fair.
 """
@@ -40,6 +42,7 @@ from urllib.request import urlopen
 import numpy as np
 import pandas as pd
 from feature_engine.encoding import OrdinalEncoder
+from feature_engine.imputation import EndTailImputer
 from feature_engine.selection import DropConstantFeatures
 from sklearn.model_selection import train_test_split
 
@@ -148,7 +151,11 @@ def _load_secom():
     target = np.where(y.to_numpy() < 0, 0, 1)  # pass (-1) -> 0, fail (1) -> 1
 
     X = X.copy()
-    X = X.fillna(X.median())  # median imputation of numeric sensors
+    # Flag sensor NaNs out of sample rather than imputing a central value: for
+    # tree models, placing "not measured" far outside the distribution lets the
+    # split use the missingness itself. secom has negative values, so we cap at
+    # 3x the feature maximum (EndTailImputer) rather than a fixed sentinel.
+    X = EndTailImputer(imputation_method="max", fold=3).fit_transform(X)
     X = DropConstantFeatures().fit_transform(X)
     return _split(X, target)
 

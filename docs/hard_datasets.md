@@ -55,8 +55,11 @@ X_train, X_test, y_train, y_test = load_hard_dataset("diabetes130")
 ### secom — semiconductor manufacturing yield (industrial)
 - **Target**: pass (`-1`) / fail (`1`) re-encoded to 0/1 (same convention as the
   imbalanced-learn datasets in `functions/data.py`).
-- **Preprocessing**: 590 numeric sensor signals; missing values are median
-  imputed; constant signals are dropped (~116 columns).
+- **Preprocessing**: 590 numeric sensor signals; missing values are flagged out
+  of sample (EndTailImputer at 3x the feature maximum) rather than imputed with a
+  central value, so tree models can use "not measured" as a signal; constant
+  signals are dropped. Missingness is mixed: most sensors are <5% missing
+  (sporadic) but ~28 are >=50% missing (structural).
 - **Why hard**: most sensors are uninformative noise and the failure rate is
   very low (~6.6%); achievable ROC-AUC is typically ~0.60-0.70.
 

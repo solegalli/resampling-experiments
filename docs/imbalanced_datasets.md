@@ -18,7 +18,7 @@ X_train, X_test, y_train, y_test = load_imbalanced_dataset("creditcard")
 | Name | Source | License | Instances | Features | Positive class | Positive rate |
 |------|--------|---------|-----------|----------|----------------|---------------|
 | `htru2` | UCI id 372 — HTRU2 | CC BY 4.0 | 17,898 | 8 | Pulsar | ~9.2% (1,639) |
-| `creditcard` | OpenML id 1597 — credit-card fraud | Public / DbCL v1.0 | 20,492 used (of 284,807) | 29 | Fraud | ~2.4% (492) |
+| `creditcard` | OpenML id 1597 — credit-card fraud | Public / DbCL v1.0 | 284,807 | 29 | Fraud | ~0.17% (492) |
 
 ### htru2 — pulsar detection (astrophysics)
 - **Target**: `class` is already binary (1 = pulsar). 8 numeric features
@@ -34,12 +34,13 @@ X_train, X_test, y_train, y_test = load_imbalanced_dataset("creditcard")
 - **Why strong signal but extreme**: only 0.17% of transactions are fraud (492
   of 284,807), yet the PCA features are highly discriminative and standard
   ensembles reach ROC-AUC ~0.97. This is the textbook tiny-minority case.
-- **Subsampling**: the full 284,807-row dataset makes the successive-halving
-  tuning intractable. The loader keeps **all 492 fraud cases** and a fixed random
-  sample of 20,000 legitimate transactions (`random_state=0`), giving ~20.5k rows
-  at ~2.4% positive. This preserves the entire minority and a severe imbalance while
-  keeping the run tractable; raise `CREDITCARD_N_NEGATIVES` (up to the full set) to
-  recover the original 0.17% rate.
+- **Full dataset**: the loader uses the entire 284,807-row dataset (~0.17%
+  positive). An earlier version down-sampled the legitimate class to keep the
+  successive-halving tuning tractable, but down-sampling only the majority is
+  itself a form of random undersampling -- exactly what these experiments set out
+  to test -- so it would confound the comparison. `CREDITCARD_N_NEGATIVES` can
+  still be set to down-sample the legitimate class (keeping every fraud case) for
+  a quicker run.
 
 ## Provenance, reproducibility and licenses
 

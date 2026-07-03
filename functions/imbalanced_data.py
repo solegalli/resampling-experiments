@@ -11,8 +11,8 @@ there, closing the main caveat of the hard-dataset comparison.
 Datasets
 --------
 - ``htru2``      (UCI id 372)     ~9.2% positive -- pulsar detection
-- ``creditcard`` (OpenML id 1597) ~2.4% positive -- credit-card fraud
-  (all 492 fraud cases kept; legitimate class down-sampled for tractability)
+- ``creditcard`` (OpenML id 1597) ~0.17% positive -- credit-card fraud
+  (full 284,807-row dataset)
 
 Licenses (see ``docs/imbalanced_datasets.md``)
 - htru2: CC BY 4.0 (commercial use permitted with attribution).
@@ -21,8 +21,7 @@ Licenses (see ``docs/imbalanced_datasets.md``)
   commercial use. Provenance: Worldline / ULB Machine Learning Group.
 
 Both datasets are clean numeric tables with no missing values. Preprocessing is
-just the 70/30 split with ``random_state=0`` used elsewhere in the project; for
-creditcard the legitimate class is additionally down-sampled (see below).
+just the 70/30 split with ``random_state=0`` used elsewhere in the project.
 """
 
 import pickle
@@ -36,11 +35,12 @@ DATASETS_IMBALANCED = ["htru2", "creditcard"]
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".data_cache"
 
-# The full credit-card dataset has 284,807 rows; the standard ensembles with
-# successive-halving tuning are intractable at that size. We keep every fraud case
-# and a fixed random sample of this many legitimate transactions, which preserves
-# the full minority and a severe imbalance (~2.4% positive) while staying tractable.
-CREDITCARD_N_NEGATIVES = 20_000
+# Use the full 284,807-row credit-card dataset (~0.17% positive). Down-sampling
+# only the majority (as an earlier version did) is itself a form of random
+# undersampling -- exactly what these experiments set out to test -- so it would
+# confound the comparison. Set an integer to down-sample the legitimate class
+# instead (keeping every fraud case), e.g. for a quicker run.
+CREDITCARD_N_NEGATIVES = None
 
 
 def _cache_path(name):
@@ -97,23 +97,22 @@ def _load_creditcard():
     Features are 28 PCA components plus the transaction amount; the OpenML
     version already excludes the raw time column. No missing values.
 
-    All 492 fraud cases are kept; the legitimate class is down-sampled to
-    ``CREDITCARD_N_NEGATIVES`` (random_state=0) so the halving-search tuning is
-    tractable. This keeps the full minority and a severe imbalance (~2.4% positive,
-    down from the original 0.17%).
+    The full 284,807-row dataset is used by default (~0.17% positive). If
+    ``CREDITCARD_N_NEGATIVES`` is set, every fraud case is kept and the legitimate
+    class is down-sampled to that many rows (random_state=0) for a quicker run.
     """
     X, y = _fetch_openml("creditcard", 1597)
     target = pd.to_numeric(y).astype(int).to_numpy()
     X = X.apply(pd.to_numeric).reset_index(drop=True)
 
-    pos_idx = np.flatnonzero(target == 1)
-    neg_idx = np.flatnonzero(target == 0)
-    n_neg = min(CREDITCARD_N_NEGATIVES, neg_idx.size)
-    neg_keep = np.random.default_rng(0).choice(neg_idx, size=n_neg, replace=False)
-    keep = np.sort(np.concatenate([pos_idx, neg_keep]))
-
-    X = X.iloc[keep].reset_index(drop=True)
-    target = target[keep]
+    if CREDITCARD_N_NEGATIVES is not None:
+        pos_idx = np.flatnonzero(target == 1)
+        neg_idx = np.flatnonzero(target == 0)
+        n_neg = min(CREDITCARD_N_NEGATIVES, neg_idx.size)
+        neg_keep = np.random.default_rng(0).choice(neg_idx, size=n_neg, replace=False)
+        keep = np.sort(np.concatenate([pos_idx, neg_keep]))
+        X = X.iloc[keep].reset_index(drop=True)
+        target = target[keep]
     return _split(X, target)
 
 
