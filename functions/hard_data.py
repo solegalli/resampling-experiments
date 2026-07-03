@@ -113,6 +113,10 @@ def _load_diabetes130():
     target = (y.iloc[:, 0] == "<30").astype(int).to_numpy()
 
     X = X.copy()
+    # encounter_id and patient_nbr are per-visit/patient identifiers, not
+    # predictors. ucimlrepo already keeps them out of `features`, but drop them
+    # explicitly so the loader does not silently depend on that.
+    X = X.drop(columns=["encounter_id", "patient_nbr"], errors="ignore")
     categorical = X.select_dtypes(include="object").columns.tolist()
     # Treat missingness as an informative category before encoding.
     X[categorical] = X[categorical].fillna("Missing")
