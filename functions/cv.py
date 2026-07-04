@@ -55,7 +55,13 @@ def train_model(
         n_jobs=n_jobs,
     )
 
-    search.fit(X_train, y_train, sample_weight=sample_weight)
+    # Only forward sample_weight when set: some estimators (e.g. imbalanced-learn's
+    # EasyEnsembleClassifier) do not accept a sample_weight argument at all, so
+    # passing sample_weight=None would raise instead of being a harmless no-op.
+    if sample_weight is not None:
+        search.fit(X_train, y_train, sample_weight=sample_weight)
+    else:
+        search.fit(X_train, y_train)
     return search
 
 
