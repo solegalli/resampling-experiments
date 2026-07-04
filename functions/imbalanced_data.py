@@ -27,20 +27,12 @@ just the 70/30 split with ``random_state=0`` used elsewhere in the project.
 import pickle
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
 DATASETS_IMBALANCED = ["htru2", "creditcard"]
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".data_cache"
-
-# Use the full 284,807-row credit-card dataset (~0.17% positive). Down-sampling
-# only the majority (as an earlier version did) is itself a form of random
-# undersampling -- exactly what these experiments set out to test -- so it would
-# confound the comparison. Set an integer to down-sample the legitimate class
-# instead (keeping every fraud case), e.g. for a quicker run.
-CREDITCARD_N_NEGATIVES = None
 
 
 def _cache_path(name):
@@ -95,24 +87,12 @@ def _load_creditcard():
     """Credit-card fraud (OpenML id 1597). Positive class: fraud.
 
     Features are 28 PCA components plus the transaction amount; the OpenML
-    version already excludes the raw time column. No missing values.
-
-    The full 284,807-row dataset is used by default (~0.17% positive). If
-    ``CREDITCARD_N_NEGATIVES`` is set, every fraud case is kept and the legitimate
-    class is down-sampled to that many rows (random_state=0) for a quicker run.
+    version already excludes the raw time column. No missing values. The full
+    284,807-row dataset is used (~0.17% positive).
     """
     X, y = _fetch_openml("creditcard", 1597)
     target = pd.to_numeric(y).astype(int).to_numpy()
     X = X.apply(pd.to_numeric).reset_index(drop=True)
-
-    if CREDITCARD_N_NEGATIVES is not None:
-        pos_idx = np.flatnonzero(target == 1)
-        neg_idx = np.flatnonzero(target == 0)
-        n_neg = min(CREDITCARD_N_NEGATIVES, neg_idx.size)
-        neg_keep = np.random.default_rng(0).choice(neg_idx, size=n_neg, replace=False)
-        keep = np.sort(np.concatenate([pos_idx, neg_keep]))
-        X = X.iloc[keep].reset_index(drop=True)
-        target = target[keep]
     return _split(X, target)
 
 
