@@ -37,7 +37,7 @@ from configs.oversamplers import (
 )
 from functions.cv_oversamplers import oversample_data
 from functions.cv_undersamplers import train_model_w_undersampling
-from functions.data import DATASETS_LS, load_dataset
+from functions.data import load_dataset
 
 warnings.filterwarnings("ignore", message="X does not have valid feature names")
 warnings.simplefilter(action="ignore", category=FutureWarning)
@@ -62,8 +62,11 @@ oversamplers = {
     "bsmote2_half": bsmote2_half,
 }
 
+# candidate datasets: few samples, roc-auc < 0.9, continuous features
+DATASETS = ["glass-0-1-4-6_vs_2", "pima", "ozone_level", "scene"]
+
 for name, sampler in oversamplers.items():
-    for dataset in tqdm(DATASETS_LS, desc=f"Datasets - {name}"):
+    for dataset in tqdm(DATASETS, desc=f"Datasets - {name}"):
         X_train, X_test, y_train, y_test = load_dataset(dataset)
 
         # Skip _half oversamplers when the dataset is not imbalanced enough.
@@ -77,9 +80,15 @@ for name, sampler in oversamplers.items():
             )
             continue
 
-        xtraino, ytraino, xtest, ytest, Xo, yo = oversample_data(
-            sampler, X_train, y_train
-        )
+        if "ros" in name:
+            xtraino, ytraino, xtest, ytest, Xo, yo = oversample_data(
+                sampler, X_train, y_train, scale=False
+            )
+        else:
+            # for smote and adasyn we need to scale the data before oversampling
+            xtraino, ytraino, xtest, ytest, Xo, yo = oversample_data(
+                sampler, X_train, y_train, scale=True,
+            )
 
         for estimator, params in tqdm(
             zip(estimator_dict, hyperparam_ensemble_dict),

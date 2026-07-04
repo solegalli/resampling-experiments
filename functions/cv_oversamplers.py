@@ -12,9 +12,9 @@ original class distribution.
 
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import MinMaxScaler
 
-
-def oversample_data(oversampler, X, y):
+def oversample_data(oversampler, X, y, scale=True):
     """
     Apply an oversampler to a 3-fold stratified split and return the results.
 
@@ -52,6 +52,9 @@ def oversample_data(oversampler, X, y):
     """
     X = np.asarray(X)
     y = np.asarray(y)
+
+    if scale is True:
+        X = MinMaxScaler().fit_transform(X)
 
     skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=10)
 

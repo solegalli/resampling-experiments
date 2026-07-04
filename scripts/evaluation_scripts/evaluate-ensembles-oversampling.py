@@ -18,7 +18,7 @@ import joblib
 from tqdm import tqdm
 
 from configs.ensemble_models import estimator_dict
-from functions.data import DATASETS_LS, load_dataset
+from functions.data import load_dataset
 from functions.evaluation import evaluate_model_on_test_set
 
 warnings.filterwarnings("ignore", message=".*X does not have valid feature names.*", category=UserWarning)
@@ -43,17 +43,26 @@ OVERSAMPLERS = [
 
 models_dir = REPO_ROOT / "models" / "oversampling"
 
+# candidate datasets: few samples, roc-auc < 0.9, continuous features
+DATASETS = ["glass-0-1-4-6_vs_2", "pima", "ozone_level", "scene"]
+
 for oversampler in tqdm(OVERSAMPLERS, desc="Oversamplers"):
     scores_dict = {}
 
-    for dataset in tqdm(DATASETS_LS, desc=oversampler, leave=False):
+    for dataset in tqdm(DATASETS, desc=oversampler, leave=False):
         _, X_test, _, y_test = load_dataset(dataset)
 
         scores_dict[dataset] = {}
 
         for estimator in estimator_dict:
+            modeldir = f"{dataset}_{estimator}_{oversampler}.pkl"
+            if "pima" in modeldir and "half" in modeldir:
+                tqdm.write(
+                    f"Skipping modeldir: minority ratio in pima was >= 0.4."
+                )
+                continue
             model = joblib.load(
-                models_dir / f"{dataset}_{estimator}_{oversampler}.pkl"
+                models_dir / modeldir
             )
             scores_dict[dataset][f"{estimator}_{oversampler}"] = (
                 evaluate_model_on_test_set(model, X_test, y_test)
