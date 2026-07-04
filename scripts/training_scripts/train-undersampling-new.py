@@ -89,13 +89,28 @@ DATASETS = [
 OUTPUT_DIR = REPO_ROOT / "models" / "undersampling-new"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Resume: reuse any (dataset, undersampler) already trained in a previous run, so
+# a fresh checkout trains everything while a re-run only fills what is missing.
 sampling_stats = {}
+if (OUTPUT_DIR / "sampling_stats").exists():
+    with open(OUTPUT_DIR / "sampling_stats", "rb") as fp:
+        sampling_stats = pickle.load(fp)
 
 for dataset, loader, undersamplers in tqdm(DATASETS, desc="Datasets"):
+    sampling_stats.setdefault(dataset, {})
+    todo = [
+        name
+        for name in undersamplers
+        if not all(
+            (OUTPUT_DIR / f"{dataset}_{est}_{name}.pkl").exists()
+            for est in estimator_dict
+        )
+    ]
+    if not todo:
+        continue
     X_train, X_test, y_train, y_test = loader(dataset)
-    sampling_stats[dataset] = {}
 
-    for name in tqdm(undersamplers, desc=dataset, leave=False):
+    for name in tqdm(todo, desc=dataset, leave=False):
         sampler, scale = SAMPLERS[name]
 
         t0 = time.time()
