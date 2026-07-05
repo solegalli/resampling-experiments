@@ -41,17 +41,15 @@ IHT_SAMPLERS = {
     "iht07": iht07,
 }
 
-# loader per dataset. creditcard (full 284k) is deliberately excluded: instance
-# -hardness undersampling barely removes anything there (the majority class is
-# easily separable, so almost no instance exceeds the hardness threshold), so IHT
-# degenerates to the baseline, and scoring hardness plus the halving search over
-# 199k rows is intractable (hours per threshold). Models already on disk are
-# skipped, so the run resumes cleanly after a sleep or interruption.
+# loader per dataset, ordered fastest-first; creditcard (full 284k) is by far the
+# slowest so it runs last. Models already on disk are skipped, so the run resumes
+# cleanly after a sleep or interruption (each estimator is checkpointed to disk).
 LOADERS = {
     "htru2": load_imbalanced_dataset,
     "default_credit": load_hard_dataset,
     "diabetes130": load_hard_dataset,
     "secom": load_hard_dataset,
+    "creditcard": load_imbalanced_dataset,
 }
 
 OUTPUT_DIR = REPO_ROOT / "models" / "iht-new"
