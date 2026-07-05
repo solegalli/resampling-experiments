@@ -41,15 +41,17 @@ IHT_SAMPLERS = {
     "iht07": iht07,
 }
 
-# loader per dataset, ordered fastest-first; creditcard (full 284k) is by far the
-# slowest so it runs last. Models already on disk are skipped, so the run resumes
-# cleanly after a sleep or interruption.
+# loader per dataset. creditcard (full 284k) is deliberately excluded: instance
+# -hardness undersampling barely removes anything there (the majority class is
+# easily separable, so almost no instance exceeds the hardness threshold), so IHT
+# degenerates to the baseline, and scoring hardness plus the halving search over
+# 199k rows is intractable (hours per threshold). Models already on disk are
+# skipped, so the run resumes cleanly after a sleep or interruption.
 LOADERS = {
     "htru2": load_imbalanced_dataset,
     "default_credit": load_hard_dataset,
     "diabetes130": load_hard_dataset,
     "secom": load_hard_dataset,
-    "creditcard": load_imbalanced_dataset,
 }
 
 OUTPUT_DIR = REPO_ROOT / "models" / "iht-new"
@@ -81,12 +83,6 @@ for dataset, loader in tqdm(LOADERS.items(), desc="Datasets"):
         sampling_stats.setdefault(name, {})[dataset] = stats
 
         for estimator, params in zip(estimator_dict, hyperparam_ensemble_dict):
-            # scikit-learn's GradientBoosting does not scale to the full
-            # creditcard (199k rows); its 1000-tree halving search runs for hours
-            # per IHT threshold. xgboost/lightgbm/catboost cover gradient boosting
-            # here and fit in seconds, so skip it on this dataset only.
-            if dataset == "creditcard" and estimator == "gbm":
-                continue
             if out_paths[estimator].exists():
                 continue  # resume: skip a model already trained
             search = train_model_w_undersampling(
