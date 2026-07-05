@@ -81,6 +81,12 @@ for dataset, loader in tqdm(LOADERS.items(), desc="Datasets"):
         sampling_stats.setdefault(name, {})[dataset] = stats
 
         for estimator, params in zip(estimator_dict, hyperparam_ensemble_dict):
+            # scikit-learn's GradientBoosting does not scale to the full
+            # creditcard (199k rows); its 1000-tree halving search runs for hours
+            # per IHT threshold. xgboost/lightgbm/catboost cover gradient boosting
+            # here and fit in seconds, so skip it on this dataset only.
+            if dataset == "creditcard" and estimator == "gbm":
+                continue
             if out_paths[estimator].exists():
                 continue  # resume: skip a model already trained
             search = train_model_w_undersampling(

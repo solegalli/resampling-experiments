@@ -42,6 +42,13 @@ for dataset in tqdm(DATASETS_IMBALANCED, desc="Datasets"):
         total=len(estimator_dict),
         leave=False,
     ):
+        # scikit-learn's GradientBoosting does not scale to the full creditcard
+        # (199k rows): a single fit is ~2 min and the 1000-tree halving search
+        # runs for many hours. xgboost, lightgbm and catboost represent the
+        # gradient-boosting family here and each fit in seconds, so skip the
+        # redundant, non-scaling estimator on this one dataset.
+        if dataset == "creditcard" and estimator == "gbm":
+            continue
         # The joblib "threading" backend parallelises the candidate search with
         # threads rather than forked processes, which avoids a macOS deadlock
         # (loky + Accelerate) on these datasets while keeping the search fast.
