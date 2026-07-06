@@ -65,6 +65,28 @@ def test_sample_weight_passed(mocker, classification_data):
         X_train, y_train, sample_weight=sample_weight
     )
 
+
+def test_easyensemble_trains_without_sample_weight(mocker, classification_data):
+    X_train, y_train = classification_data
+    sample_weight = np.ones(len(y_train))
+
+    # We don't need a real EasyEnsembleClassifier, just an object that acts like it.
+    class MockEasyEnsemble:
+        pass
+
+    estimator = MockEasyEnsemble()
+    # Ensure it's treated as EasyEnsembleClassifier by checking the name
+    estimator.__class__.__name__ = "EasyEnsembleClassifier"
+
+    params = {"n_estimators": [10]}
+    mock_search = mocker.patch("functions.cv.HalvingRandomSearchCV")
+
+    # This should now call fit WITHOUT sample_weight even though one was passed
+    train_model(estimator, params, X_train, y_train, sample_weight=sample_weight)
+
+    mock_search.return_value.fit.assert_called_once_with(X_train, y_train)
+
+
 @pytest.mark.parametrize(
     "IR, expected_weights",
     [

@@ -26,6 +26,7 @@ def check_quality(X, name, dataset):
 
 def check_target_quality(y, name, dataset):
     """Checks that the target y contains only 0s and 1s, and both are present."""
+    assert not isinstance(y, pd.DataFrame), f"{name} should not be a DataFrame in {dataset}"
     if isinstance(y, pd.Series):
         y = y.to_numpy()
     unique_values = np.unique(y)

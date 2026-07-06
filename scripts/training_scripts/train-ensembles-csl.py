@@ -9,6 +9,7 @@ successive halving with the number of trees as the limiting resource.
 """
 
 import sys
+import time
 import warnings
 from pathlib import Path
 
@@ -42,6 +43,7 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
         leave=False,
     ):
         for weight, sw in sample_weights.items():
+            start_time = time.time()
             search = train_model(
                 estimator_dict[estimator],
                 hyperparam_ensemble_dict[params],
@@ -50,4 +52,5 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
                 scoring="roc_auc",
                 sample_weight=sw,
             )
+            search.fit_time = time.time() - start_time
             joblib.dump(search, OUTPUT_DIR / f"{dataset}_{estimator}_sw{weight}.pkl")

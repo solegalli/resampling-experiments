@@ -8,10 +8,11 @@ Models are saved to disk for later evaluation.
 """
 
 import sys
+import time
 import warnings
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 import pickle
@@ -47,6 +48,7 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
         total=len(estimator_dict),
         leave=False,
     ):
+        start_time = time.time()
         search = train_model_w_undersampling(
             estimator_dict[estimator],
             hyperparam_ensemble_dict[params],
@@ -57,6 +59,7 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
             Xu,
             yu,
         )
+        search.fit_time = time.time() - start_time
         joblib.dump(search, OUTPUT_DIR / f"{dataset}_{estimator}_nm1.pkl")
 
 with open(OUTPUT_DIR / "sampling_stats", "wb") as fp:

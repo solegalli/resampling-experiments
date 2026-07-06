@@ -22,7 +22,7 @@ SCRIPTS = [
     "train-nm2.py",
 ]
 
-SCRIPTS_DIR = Path(__file__).resolve().parent
+SCRIPTS_DIR = Path(__file__).resolve().parent / "train-us"
 
 for i, script in enumerate(SCRIPTS, 1):
     print(f"[{i}/{len(SCRIPTS)}] Running {script} ...")

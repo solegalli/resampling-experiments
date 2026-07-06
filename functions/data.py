@@ -205,7 +205,7 @@ def load_uci_openml(dataset):
     else:
         data = fetch_ucirepo(id=datasets[dataset])
         X = data.data.features.copy()
-        y = data.data.targets.copy()
+        y = data.data.targets.squeeze().copy()
 
     if dataset == "diabetes130":
         diag_cols = ["diag_1", "diag_2", "diag_3"]
@@ -225,6 +225,6 @@ def load_uci_openml(dataset):
         X = CategoricalImputer().fit_transform(X)
         X = OrdinalEncoder(encoding_method="arbitrary").fit_transform(X)
         X = DropConstantFeatures().fit_transform(X)
-        y = (y.iloc[:, 0] == "<30").astype(int).to_numpy()
+        y = (y == "<30").astype(int).to_numpy()
 
     return X, y
