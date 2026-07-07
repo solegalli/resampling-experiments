@@ -2,7 +2,16 @@
 This module contains functions to load the datasets for the analysis.
 The datasets to be analysed were decided in the notebooks located in
 notebooks/exploratory-data-analysis.
+
+Preprocessing steps: categorical variables are arbitrary
+ordinal-encoded, constant features are dropped, and the data is split 70/30 with
+``random_state=0``. Missing values, when present, are imputed as 3 times the maximum
+value of the variable for numerical variables or with the string missing for 
+categorical variables.
+Feature engineering steps are applied before splitting; the resulting leakage 
+is negligible and applied identically to every model, keeping the comparison fair.
 """
+import warnings
 import zipfile
 from io import BytesIO
 from urllib.request import urlopen
@@ -71,16 +80,17 @@ DATASETS_UCI_OPENML = [
     "default_credit",
     "htru2",
     "credit_fraud",
-    "sencom",
+    "secom",
     "bank-marketing",
     "telco",
     "adult",
 ]
 
-DATASETS_LS = list(
-    set(DATASETS_IMBLEARN + DATASETS_KEEL + DATASETS_UCI_OPENML)
-    - set(DATASETS_SEPARABLE)
-)
+DATASETS_LS = [
+    dataset
+    for dataset in dict.fromkeys(DATASETS_IMBLEARN + DATASETS_KEEL + DATASETS_UCI_OPENML)
+    if dataset not in DATASETS_SEPARABLE
+]
 
 
 def load_dataset(dataset):
@@ -155,7 +165,7 @@ def load_uci_openml(dataset):
         X = data.data.copy()
         y = data.target.copy().astype(int)
 
-    elif dataset == "sencom":
+    elif dataset == "secom":
         # SECOM is not available through the ucimlrepo API, so we download it
         #  directly from the UCI static file server.
         SECOM_URL = "https://archive.ics.uci.edu/static/public/179/secom.zip"
@@ -203,7 +213,13 @@ def load_uci_openml(dataset):
         X = OrdinalEncoder(encoding_method="arbitrary").fit_transform(X)
 
     else:
-        data = fetch_ucirepo(id=datasets[dataset])
+        # ucimlrepo reads the source CSV without specifying dtypes, which
+        # raises a DtypeWarning for diabetes130's mixed-type diagnosis
+        # columns (diag_1/2/3). We coerce those columns ourselves below,
+        # so the warning is safe to suppress here.
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=pd.errors.DtypeWarning)
+            data = fetch_ucirepo(id=datasets[dataset])
         X = data.data.features.copy()
         y = data.data.targets.squeeze().copy()
 

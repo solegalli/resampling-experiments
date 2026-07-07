@@ -84,9 +84,6 @@ class InstanceHardnessUnderSampler(BaseUnderSampler):
             n_splits=self.cv, shuffle=True, random_state=self.random_state
         )
 
-        # Index of class 1 in predict_proba output
-        class_1_idx = list(estimator.classes_ if hasattr(estimator, "classes_")
-                           else classes).index(1) if 1 in classes else 1
 
         for train_idx, test_idx in skf.split(X, y):
             fold_estimator = clone(estimator)
