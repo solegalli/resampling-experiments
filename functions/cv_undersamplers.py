@@ -10,10 +10,60 @@ https://stackoverflow.com/questions/79748461/how-to-pass-pre-computed-folds-to-s
 """
 
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.base import clone
 from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.model_selection import ParameterSampler, StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
+
+
+_THREAD_PARAM_BY_CLASS = {
+    "RandomForestClassifier": "n_jobs",
+    "XGBClassifier": "n_jobs",
+    "LGBMClassifier": "n_jobs",
+    "CatBoostClassifier": "thread_count",
+}
+
+
+def _single_threaded_clone(model):
+    """
+    Clone `model` and force any of its own internal multi-core parallelism
+    (RandomForest/XGBoost/LightGBM's `n_jobs`, CatBoost's `thread_count`) down
+    to a single thread.
+
+    Used when fitting candidates inside an outer `joblib.Parallel` search
+    loop: nesting one joblib/loky pool inside another (an `n_jobs=-1`
+    estimator fit from within an `n_jobs=-1` Parallel loop) can deadlock on
+    macOS (see `functions/cv.py:train_model`). Forcing the inner estimator to
+    a single thread avoids that, while the outer loop still uses all cores.
+
+    Estimators without their own thread/process parallelism (AdaBoost,
+    GradientBoostingClassifier) are cloned unchanged. We look up the
+    parameter name by class rather than trying both names on every estimator:
+    XGBoost/LightGBM/CatBoost accept unknown kwargs silently at `set_params`
+    time and only warn about them at `fit` time, so a blind try/except would
+    let a wrong name through instead of skipping it.
+    """
+    clf = clone(model)
+    param = _THREAD_PARAM_BY_CLASS.get(type(model).__name__)
+    if param is not None:
+        clf.set_params(**{param: 1})
+    return clf
+
+
+def _fit_and_score(model, params_, xtrain, ytrain, xtest, ytest, scoring):
+    """Fit one candidate on one fold and return its validation score."""
+    clf = _single_threaded_clone(model)
+    clf.set_params(**params_)
+    clf.fit(xtrain, ytrain)
+    y_pred = clf.predict_proba(xtest)[:, 1]
+
+    if scoring == "log_loss":
+        return log_loss(ytest, y_pred)
+    elif scoring == "roc_auc":
+        return roc_auc_score(ytest, y_pred)
+    elif scoring == "brier":
+        return brier_score_loss(ytest, y_pred)
 
 
 def undersample_data(undersampler, X, y, scale):
@@ -144,27 +194,23 @@ def train_model_w_undersampling(
     param_list = list(ParameterSampler(params, n_iter=n_iter, random_state=42))
 
     # --- Round 1: screen all candidates with n_estimators=10 ---
-    results = []
-    for params_ in param_list:
-        fold_scores = []
-        temp_params = params_.copy()
-        temp_params["n_estimators"] = 10
+    # Every (candidate, fold) fit is independent, so they're dispatched to a
+    # process pool across all cores instead of run one at a time. Parallel
+    # preserves submission order in its returned list, so scores can be
+    # reshaped straight back into per-candidate groups of 3 folds.
+    round1_scores = Parallel(n_jobs=-1)(
+        delayed(_fit_and_score)(
+            model, {**params_, "n_estimators": 10},
+            xtrainu[i], ytrainu[i], xtest[i], ytest[i], scoring,
+        )
+        for params_ in param_list
+        for i in range(3)
+    )
 
-        for i in range(3):
-            clf = clone(model)
-            clf.set_params(**temp_params)
-            clf.fit(xtrainu[i], ytrainu[i])
-            y_pred = clf.predict_proba(xtest[i])[:, 1]
-
-            if scoring == "log_loss":
-                fold_scores.append(log_loss(ytest[i], y_pred))
-            elif scoring == "roc_auc":
-                fold_scores.append(roc_auc_score(ytest[i], y_pred))
-            elif scoring == "brier":
-                fold_scores.append(brier_score_loss(ytest[i], y_pred))
-
-        avg_score = np.mean(fold_scores)
-        results.append((params_, avg_score))
+    results = [
+        (params_, np.mean(round1_scores[idx * 3:(idx + 1) * 3]))
+        for idx, params_ in enumerate(param_list)
+    ]
 
     # Promote top 10
     if scoring == "roc_auc":
@@ -173,27 +219,19 @@ def train_model_w_undersampling(
         top10 = sorted(results, key=lambda x: x[1])[:10]
 
     # --- Round 2: re-evaluate top 10 with n_estimators=300 ---
-    results_r2 = []
-    for params_, _ in top10:
-        fold_scores = []
-        temp_params = params_.copy()
-        temp_params["n_estimators"] = 300
+    round2_scores = Parallel(n_jobs=-1)(
+        delayed(_fit_and_score)(
+            model, {**params_, "n_estimators": 300},
+            xtrainu[i], ytrainu[i], xtest[i], ytest[i], scoring,
+        )
+        for params_, _ in top10
+        for i in range(3)
+    )
 
-        for i in range(3):
-            clf = clone(model)
-            clf.set_params(**temp_params)
-            clf.fit(xtrainu[i], ytrainu[i])
-            y_pred = clf.predict_proba(xtest[i])[:, 1]
-
-            if scoring == "log_loss":
-                fold_scores.append(log_loss(ytest[i], y_pred))
-            elif scoring == "roc_auc":
-                fold_scores.append(roc_auc_score(ytest[i], y_pred))
-            elif scoring == "brier":
-                fold_scores.append(brier_score_loss(ytest[i], y_pred))
-
-        avg_score = np.mean(fold_scores)
-        results_r2.append((params_, avg_score))
+    results_r2 = [
+        (params_, np.mean(round2_scores[idx * 3:(idx + 1) * 3]))
+        for idx, (params_, _) in enumerate(top10)
+    ]
 
     # Select best configuration
     if scoring == "roc_auc":
