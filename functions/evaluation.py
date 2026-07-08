@@ -108,9 +108,6 @@ def evaluate_model_on_test_set(search, X, y):
          mean_gmean, std_gmean,
          mean_threshold, std_threshold]
 
-    If `return_bootstrap_samples` is True, returns a tuple with the list above
-    and a dictionary containing the metric values for each bootstrap sample.
-
     Precision, recall, and threshold are computed at the F1-optimal threshold
     per bootstrap sample. Other threshold dependent metrics are obtained using
     the threshold that maximizes them.
