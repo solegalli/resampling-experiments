@@ -35,12 +35,12 @@ X_train, X_test, y_train, y_test = load_imbalanced_dataset("creditcard")
   of 284,807), yet the PCA features are highly discriminative and standard
   ensembles reach ROC-AUC ~0.97. This is the textbook tiny-minority case.
 - **Full dataset**: the loader uses the entire 284,807-row dataset (~0.17%
-  positive). An earlier version down-sampled the legitimate class to keep the
-  successive-halving tuning tractable, but down-sampling only the majority is
-  itself a form of random undersampling -- exactly what these experiments set out
-  to test -- so it would confound the comparison. `CREDITCARD_N_NEGATIVES` can
-  still be set to down-sample the legitimate class (keeping every fraud case) for
-  a quicker run.
+  positive). Down-sampling only the majority (as an earlier version did) is itself
+  a form of random undersampling -- exactly what these experiments set out to
+  test -- so it would confound the comparison. The full comparison (all standard
+  and special ensembles, the undersamplers and the IHT sweep) is run on the whole
+  dataset; the successive-halving search on 199k rows makes this slow but
+  tractable.
 
 ## Provenance, reproducibility and licenses
 
