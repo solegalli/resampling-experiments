@@ -50,6 +50,35 @@ def create_df(scores_dict, dataset, models):
     return df.loc[models].fillna(0)
 
 
+def create_fold_df(folds_dict, dataset, metric):
+    """
+    Create a DataFrame of per-fold metric values for a given dataset and metric.
+
+    Parameters
+    ----------
+    folds_dict : dict
+        Nested dictionary where keys are dataset names and values are
+        dictionaries keyed by model name, each mapping metric names to a list
+        of per-fold (bootstrap sample) values, as produced by
+        `evaluate_model_on_test_set` and saved as `results_folds` by the
+        evaluation scripts.
+    dataset : str
+        The dataset key to look up in folds_dict.
+    metric : str
+        Name of the metric to extract (e.g. 'roc', 'ap', 'precision',
+        'recall', 'f1', 'mcc', 'ba', 'brier', 'gmean', 'thresh').
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame where each row is a bootstrap fold and each column is a
+        model.
+    """
+    return pd.DataFrame(
+        {model: values[metric] for model, values in folds_dict[dataset].items()}
+    )
+
+
 def best_performance_summary(
     scores_dict,
     datasets,

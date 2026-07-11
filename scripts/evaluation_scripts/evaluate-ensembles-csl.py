@@ -29,6 +29,7 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 MODELS_DIR = REPO_ROOT / "models" / "csl"
 
 scores_dict = {}
+folds_dict = {}
 
 for dataset in tqdm(DATASETS_LS, desc="Datasets"):
     _, X_test, y_train, y_test = load_dataset(dataset)
@@ -36,13 +37,17 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
     sample_weights = get_sample_weights(y_train)
 
     scores_dict[dataset] = {}
+    folds_dict[dataset] = {}
 
     for estimator in tqdm(estimator_dict, desc=dataset, leave=False):
         for weight in sample_weights:
             search = joblib.load(MODELS_DIR / f"{dataset}_{estimator}_sw{weight}.pkl")
-            scores_dict[dataset][f"{estimator}_sw{weight}"] = evaluate_model_on_test_set(
-                search, X_test, y_test
-            )
+            results, fold_metrics = evaluate_model_on_test_set(search, X_test, y_test)
+            scores_dict[dataset][f"{estimator}_sw{weight}"] = results
+            folds_dict[dataset][f"{estimator}_sw{weight}"] = fold_metrics
 
 with open(MODELS_DIR / "results.pkl", "wb") as fp:
     pickle.dump(scores_dict, fp)
+
+with open(MODELS_DIR / "results_folds.pkl", "wb") as fp:
+    pickle.dump(folds_dict, fp)

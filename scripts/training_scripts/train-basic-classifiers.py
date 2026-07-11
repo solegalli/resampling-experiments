@@ -2,7 +2,7 @@
 Train classical machine learning classifiers on various imbalanced datasets.
 
 Models trained: logistic regression, knn, svc, and decision trees from scikit-learn.
-Hyperparameter tuning uses randomized search limiting the tests to 20 because these
+Hyperparameter tuning uses randomised search limiting the tests to 20 because these
 models have few hyperparameters.
 """
 
@@ -14,7 +14,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 import joblib
-import numpy as np
 from tqdm import tqdm
 
 from configs.basic_models import estimator_dict
@@ -28,7 +27,6 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 OUTPUT_DIR = REPO_ROOT / "models" / "basic"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-problematic = []
 for dataset in tqdm(DATASETS_LS, desc="Datasets"):
     X_train, X_test, y_train, y_test = load_dataset(dataset)
 
@@ -46,18 +44,3 @@ for dataset in tqdm(DATASETS_LS, desc="Datasets"):
             scoring="roc_auc",
         )
         joblib.dump(search, OUTPUT_DIR / f"{dataset}_{estimator}.pkl")
-
-        n_unique = len(np.unique(search.best_estimator_.predict_proba(X_train)[:, 1]))
-        if n_unique < 10:
-            problematic.append(
-                {
-                    "dataset": dataset,
-                    "estimator": estimator,
-                    "n_unique": n_unique,
-                }
-            )
-
-import json
-
-with open(OUTPUT_DIR / "problematic_distributions_other.json", "w") as f:
-    json.dump(problematic, f, indent=2)

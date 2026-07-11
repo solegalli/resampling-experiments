@@ -7,6 +7,7 @@ and saved to disk for later evaluation.
 """
 
 import sys
+import time
 import warnings
 from pathlib import Path
 
@@ -55,6 +56,7 @@ for name, sampler in undersamplers.items():
             total=len(estimator_dict),
             leave=False,
         ):
+            start_time = time.time()
             search = train_model_w_undersampling(
                 estimator_dict[estimator],
                 hyperparam_ensemble_dict[params],
@@ -65,6 +67,7 @@ for name, sampler in undersamplers.items():
                 Xu,
                 yu,
             )
+            search.fit_time = time.time() - start_time
             joblib.dump(search, OUTPUT_DIR / f"{dataset}_{estimator}_{name}.pkl")
 
 with open(OUTPUT_DIR / "sampling_stats", "wb") as fp:

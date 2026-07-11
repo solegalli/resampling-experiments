@@ -27,17 +27,22 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 MODELS_DIR = REPO_ROOT / "models" / "ensembles"
 
 scores_dict = {}
+folds_dict = {}
 
 for dataset in tqdm(DATASETS_LS, desc="Datasets"):
     _, X_test, _, y_test = load_dataset(dataset)
 
     scores_dict[dataset] = {}
+    folds_dict[dataset] = {}
 
     for estimator in tqdm(estimator_dict, desc=dataset, leave=False):
         search = joblib.load(MODELS_DIR / f"{dataset}_{estimator}.pkl")
-        scores_dict[dataset][estimator] = evaluate_model_on_test_set(
-            search, X_test, y_test
-        )
+        results, fold_metrics = evaluate_model_on_test_set(search, X_test, y_test)
+        scores_dict[dataset][estimator] = results
+        folds_dict[dataset][estimator] = fold_metrics
 
 with open(MODELS_DIR / "results", "wb") as fp:
     pickle.dump(scores_dict, fp)
+
+with open(MODELS_DIR / "results_folds", "wb") as fp:
+    pickle.dump(folds_dict, fp)

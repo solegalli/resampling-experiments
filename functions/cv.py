@@ -54,8 +54,12 @@ def train_model(
         refit=refit,
         n_jobs=n_jobs,
     )
-
-    search.fit(X_train, y_train, sample_weight=sample_weight)
+    # EasyEnsembleClassifier doesn not accept sample_weight, 
+    # so we need to handle it separately.
+    if type(estimator).__name__ == "EasyEnsembleClassifier":
+        search.fit(X_train, y_train)
+    else:
+        search.fit(X_train, y_train, sample_weight=sample_weight)
     return search
 
 

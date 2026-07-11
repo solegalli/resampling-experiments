@@ -40,19 +40,24 @@ UNDERSAMPLERS = [
 for undersampler in tqdm(UNDERSAMPLERS, desc="Undersamplers"):
     models_dir = REPO_ROOT / "models" / undersampler
     scores_dict = {}
+    folds_dict = {}
 
     for dataset in tqdm(DATASETS_LS, desc=undersampler, leave=False):
         _, X_test, _, y_test = load_dataset(dataset)
 
         scores_dict[dataset] = {}
+        folds_dict[dataset] = {}
 
         for estimator in estimator_dict:
             model = joblib.load(
                 models_dir / f"{dataset}_{estimator}_{undersampler}.pkl"
             )
-            scores_dict[dataset][f"{estimator}_{undersampler}"] = (
-                evaluate_model_on_test_set(model, X_test, y_test)
-            )
+            results, fold_metrics = evaluate_model_on_test_set(model, X_test, y_test)
+            scores_dict[dataset][f"{estimator}_{undersampler}"] = results
+            folds_dict[dataset][f"{estimator}_{undersampler}"] = fold_metrics
 
     with open(models_dir / "results", "wb") as fp:
         pickle.dump(scores_dict, fp)
+
+    with open(models_dir / "results_folds", "wb") as fp:
+        pickle.dump(folds_dict, fp)

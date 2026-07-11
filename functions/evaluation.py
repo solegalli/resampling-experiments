@@ -149,7 +149,7 @@ def evaluate_model_on_test_set(search, X, y):
         brier.append(brier_score_loss(ys, prob))
         thresh.append(t)
 
-    return [
+    results = [
         np.mean(roc),
         np.std(roc),
         np.mean(ap),
@@ -171,3 +171,18 @@ def evaluate_model_on_test_set(search, X, y):
         np.mean(thresh),
         np.std(thresh),
     ]
+
+
+    return results, {
+        "roc": roc,
+        "ap": ap,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1score,
+        "mcc": mcc,
+        "ba": ba,
+        "brier": brier,
+        "gmean": gmean,
+        "thresh": thresh,
+    }
+
