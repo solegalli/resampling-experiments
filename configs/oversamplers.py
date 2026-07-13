@@ -13,6 +13,7 @@ from imblearn.over_sampling import ADASYN, SMOTE, BorderlineSMOTE, RandomOverSam
 ros_equal = RandomOverSampler(sampling_strategy=1.0, random_state=0)
 ros_half = RandomOverSampler(sampling_strategy=0.5, random_state=0)
 
+# ROSE
 ros_shrink01_equal = RandomOverSampler(
     sampling_strategy=1.0, random_state=0, shrinkage=0.1
 )

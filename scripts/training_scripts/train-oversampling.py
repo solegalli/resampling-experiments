@@ -63,7 +63,7 @@ oversamplers = {
 }
 
 # candidate datasets: few samples, roc-auc < 0.9, continuous features
-DATASETS = ["glass-0-1-4-6_vs_2", "pima", "ozone_level", "scene"]
+DATASETS = ["glass-0-1-4-6_vs_2", "pima", "ozone_level", "scene", "secom"]
 
 for name, sampler in oversamplers.items():
     for dataset in tqdm(DATASETS, desc=f"Datasets - {name}"):
