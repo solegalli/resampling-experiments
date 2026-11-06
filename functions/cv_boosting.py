@@ -129,9 +129,6 @@ def _train_cat(params, X, y, w, X_va, y_va, max_rounds, patience, trial):
     return model, model.get_best_iteration() + 1
 
 
-_TRAINERS = {"lgbm": _train_lgbm, "xgb": _train_xgb, "cat": _train_cat}
-
-
 def _refit(library, params, X, y, w, rounds):
     """Train on the full data for a fixed number of rounds."""
     if library == "lgbm":
@@ -182,7 +179,7 @@ def tune_native_gbm(
     -------
     TunedBooster
     """
-    train = _TRAINERS[library]
+    train = {"lgbm": _train_lgbm, "xgb": _train_xgb, "cat": _train_cat}[library]
 
     def objective(trial):
         params = {**FIXED_PARAMS[library], **suggest_fn(trial)}
@@ -207,7 +204,7 @@ def tune_native_gbm(
 
     study = optuna.create_study(
         direction="maximize",
-        sampler=optuna.samplers.TPESampler(seed=10),
+        sampler=optuna.samplers.RandomSampler(seed=10),
         pruner=optuna.pruners.SuccessiveHalvingPruner(
             min_resource=10, reduction_factor=3
         ),
