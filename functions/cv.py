@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.experimental import enable_halving_search_cv
 from sklearn.model_selection import HalvingRandomSearchCV, RandomizedSearchCV
 
+from functions.cv_boosting import NativeGBM, tune_native_gbm_cv
+
 
 def get_sample_weights(y_train):
     """
@@ -35,10 +37,24 @@ def train_model(
     a nested-parallelism deadlock that can occur on macOS when the search workers
     and a parallel estimator both spawn joblib/loky processes. It does not change
     the fitted models, only how they are scheduled.
+
+    If ``estimator`` is a ``NativeGBM`` (CatBoost, LightGBM, XGBoost), tuning
+    is delegated to ``functions.cv_boosting.tune_native_gbm_cv``: Optuna with
+    native early stopping and successive-halving pruning. ``params`` must then
+    be a ``suggest_fn(trial)`` and ``scoring`` one of "roc_auc", "log_loss"
+    or "brier". ``refit`` and ``n_jobs`` are ignored on that path (the model is
+    always refit; boosters use all cores). Returns a ``TunedBooster``.
     """
 
-    # CatBoostClassifier does not recognize n_estimators as hyperparameter.
-    # https://github.com/scikit-learn/scikit-learn/issues/19844
+    if isinstance(estimator, NativeGBM):
+        return tune_native_gbm_cv(
+            estimator,
+            params,
+            X_train,
+            y_train,
+            sample_weight=sample_weight,
+            scoring=scoring,
+        )
 
     search = HalvingRandomSearchCV(
         estimator=estimator,
