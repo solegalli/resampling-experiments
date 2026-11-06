@@ -10,27 +10,21 @@ from functions.cv import train_model
 from functions.cv_boosting import TunedBooster
 from functions.cv_undersamplers import train_model_w_undersampling, undersample_data
 
-
-@pytest.fixture(scope="module")
-def data():
-    X, y = make_classification(
-        n_samples=600, n_features=8, weights=[0.8, 0.2], random_state=10
-    )
-    return X, y
+X, y = make_classification(
+    n_samples=600, n_features=8, weights=[0.8, 0.2], random_state=10
+)
 
 
 @pytest.fixture(scope="module", params=["cat", "lgbm", "xgb"])
-def tuned(request, data):
-    X, y = data
+def tuned(request):
     library = request.param
     return library, train_model(
         library, hyperparam_ensemble_dict[f"{library}_params"], X, y
     )
 
 
-def test_predict_proba_shape_and_range(tuned, data):
+def test_predict_proba_shape_and_range(tuned):
     _, model = tuned
-    X, _ = data
     proba = model.predict_proba(X)
     assert proba.shape == (len(X), 2)
     assert np.all((proba >= 0) & (proba <= 1))
@@ -54,16 +48,14 @@ def test_trials_store_best_iteration_per_fold(tuned):
     assert complete["user_attrs_best_iterations"].map(len).eq(3).all()
 
 
-def test_pruning_callback_reports_each_round(mocker, data):
-    X, y = data
+def test_pruning_callback_reports_each_round(mocker):
     spy = mocker.spy(optuna, "create_study")
     train_model("lgbm", hyperparam_ensemble_dict["lgbm_params"], X, y)
     study = spy.spy_return
     assert all(len(t.intermediate_values) > 0 for t in study.trials)
 
 
-def test_sample_weights_only_on_training_data(mocker, data):
-    X, y = data
+def test_sample_weights_only_on_training_data(mocker):
     spy = mocker.spy(lgb, "Dataset")
     train_model(
         "lgbm",
@@ -80,8 +72,7 @@ def test_sample_weights_only_on_training_data(mocker, data):
     assert all(c.kwargs["weight"] is not None for c in train)
 
 
-def test_train_model_w_undersampling_native(data):
-    X, y = data
+def test_train_model_w_undersampling_native():
     xtrainu, ytrainu, xtest, ytest, Xu, yu, _ = undersample_data(
         RandomUnderSampler(random_state=10), X, y, scale=False
     )
