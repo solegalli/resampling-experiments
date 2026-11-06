@@ -2,8 +2,10 @@
 Train ensemble (tree-based) machine learning classifiers on various imbalanced datasets.
 
 Models trained: random forests, XGBoost, LightGBM, CatBoost, AdaBoost, and
-gradient boosting machines from scikit-learn. Hyperparameter tuning uses
-successive halving with the number of trees as the limiting resource.
+gradient boosting machines from scikit-learn. RF, AdaBoost and the scikit-learn GBM are tuned
+with successive halving using the number of trees as the limiting resource.
+CatBoost, LightGBM and XGBoost use their native APIs, tuned with Optuna, early
+stopping and successive-halving pruning (see functions/cv_boosting.py).
 """
 
 import sys

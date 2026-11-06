@@ -3,7 +3,8 @@ Train classifiers with Random Undersampling on various imbalanced datasets.
 
 Undersampling is applied once before hyperparameter search to avoid resampling
 on every candidate. Models are tuned with a manual successive halving approach
-and saved to disk for later evaluation.
+and saved to disk for later evaluation. CatBoost, LightGBM and XGBoost are instead
+tuned with Optuna and native early stopping (see functions/cv_boosting.py).
 """
 
 import sys

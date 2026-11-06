@@ -16,6 +16,8 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.model_selection import ParameterSampler, StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
 
+from functions.cv_boosting import NativeGBM, tune_native_gbm_presplit
+
 
 _THREAD_PARAM_BY_CLASS = {
     "RandomForestClassifier": "n_jobs",
@@ -169,12 +171,20 @@ def train_model_w_undersampling(
       - Round 2: top 10 candidates with n_estimators=300, scored on 3 folds
       - Final:   best candidate retrained with n_estimators=800 on full data
 
+    If `model` is a `NativeGBM` (CatBoost, LightGBM, XGBoost), tuning is
+    delegated to `functions.cv_boosting.tune_native_gbm_presplit` instead:
+    Optuna with native early stopping (the number of rounds is not fixed) and
+    successive-halving pruning, on the same pre-resampled folds. It returns a
+    `TunedBooster` refit on (Xu, yu).
+
     Parameters
     ----------
-    model : estimator
-        An unfitted sklearn-compatible classifier with `n_estimators`.
-    params : dict
-        Hyperparameter search space passed to ParameterSampler.
+    model : estimator or NativeGBM
+        An unfitted sklearn-compatible classifier with `n_estimators`, or a
+        `NativeGBM` spec.
+    params : dict or callable
+        Hyperparameter search space passed to ParameterSampler, or a
+        `suggest_fn(trial)` for a `NativeGBM`.
     xtrainu, ytrainu : list of arrays
         Per-fold undersampled training sets produced by `undersample_data`.
     xtest, ytest : list of arrays
@@ -189,6 +199,11 @@ def train_model_w_undersampling(
     valid_scorings = ("log_loss", "roc_auc", "brier")
     if scoring not in valid_scorings:
         raise ValueError(f"scoring must be one of {valid_scorings}, got '{scoring}'")
+
+    if isinstance(model, NativeGBM):
+        return tune_native_gbm_presplit(
+            model, params, xtrainu, ytrainu, xtest, ytest, Xu, yu, scoring=scoring
+        )
 
     n_iter = 100
     param_list = list(ParameterSampler(params, n_iter=n_iter, random_state=42))
