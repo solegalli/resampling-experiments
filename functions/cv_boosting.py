@@ -238,8 +238,8 @@ def tune_native_gbm(
 
 def _early_stop(scores, patience):
     """
-    Return the round (1-based) with the best score, stopping once the score
-    has not improved for ``patience`` rounds.
+    Return the round (1-based) with the best score and that score, stopping
+    once the score has not improved for ``patience`` rounds.
     """
     best_round, best = 0, -np.inf
     for i, score in enumerate(scores, start=1):
@@ -247,7 +247,7 @@ def _early_stop(scores, patience):
             best_round, best = i, score
         elif i - best_round >= patience:
             break
-    return best_round
+    return best_round, best
 
 
 def _staged_auc(learning_rate, rounds, fold):
@@ -267,18 +267,16 @@ def tune_adaboost(
     X,
     y,
     sample_weight=None,
-    screen_rounds=50,
     max_rounds=1000,
     patience=3,
 ):
     """
     Tune AdaBoost's learning rate and number of rounds, and refit it on (X, y).
 
-    Each learning rate is fit for ``screen_rounds`` rounds on every fold and
-    scored by the mean, across folds, of its best validation AUC. The best
-    learning rate is then fit for up to ``max_rounds`` rounds on every fold;
-    on each fold the number of rounds is set by early stopping on the
-    validation AUC. The final model is refit with the mean number of rounds.
+    Each learning rate is fit for up to ``max_rounds`` rounds on every fold,
+    with early stopping on the validation AUC. It is scored by the mean,
+    across folds, of the AUC at the stopping round. The best learning rate is
+    refit with the mean number of rounds across folds.
 
     Parameters
     ----------
@@ -293,15 +291,15 @@ def tune_adaboost(
     -------
     AdaBoostClassifier
     """
-    screen = {
-        lr: np.mean([max(_staged_auc(lr, screen_rounds, fold)) for fold in folds])
-        for lr in learning_rates
-    }
-    lr = max(screen, key=screen.get)
-    rounds = [
-        _early_stop(_staged_auc(lr, max_rounds, fold), patience) for fold in folds
-    ]
+    results = {}  # learning rate -> (mean AUC, mean rounds)
+    for lr in learning_rates:
+        rounds, scores = zip(
+            *[_early_stop(_staged_auc(lr, max_rounds, f), patience) for f in folds]
+        )
+        results[lr] = (np.mean(scores), int(round(np.mean(rounds))))
+
+    lr = max(results, key=lambda rate: results[rate][0])
     model = AdaBoostClassifier(
-        n_estimators=int(round(np.mean(rounds))), learning_rate=lr, random_state=10
+        n_estimators=results[lr][1], learning_rate=lr, random_state=10
     )
     return model.fit(X, y, sample_weight=sample_weight)

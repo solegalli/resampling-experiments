@@ -93,7 +93,7 @@ def test_train_model_w_undersampling_native():
 
 def test_early_stop_returns_best_round_before_patience_runs_out():
     # the 0.9 in round 6 comes after 3 rounds without improvement
-    assert _early_stop([0.5, 0.6, 0.6, 0.6, 0.6, 0.9], patience=3) == 2
+    assert _early_stop([0.5, 0.6, 0.6, 0.6, 0.6, 0.9], patience=3) == (2, 0.6)
 
 
 def test_adaboost_tuned_with_learning_rate_grid_and_early_stopping():
