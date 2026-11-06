@@ -4,10 +4,11 @@ import optuna
 import pytest
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.datasets import make_classification
+from sklearn.ensemble import AdaBoostClassifier
 
 from configs.hyperparams import hyperparam_ensemble_dict
 from functions.cv import train_model
-from functions.cv_boosting import TunedBooster
+from functions.cv_boosting import TunedBooster, _early_stop
 from functions.cv_undersamplers import train_model_w_undersampling, undersample_data
 
 X, y = make_classification(
@@ -87,4 +88,25 @@ def test_train_model_w_undersampling_native():
         yu,
     )
     assert isinstance(model, TunedBooster)
+    assert model.predict_proba(X).shape == (len(X), 2)
+
+
+def test_early_stop_returns_best_round_before_patience_runs_out():
+    # the 0.9 in round 6 comes after 3 rounds without improvement
+    assert _early_stop([0.5, 0.6, 0.6, 0.6, 0.6, 0.9], patience=3) == 2
+
+
+def test_adaboost_tuned_with_learning_rate_grid_and_early_stopping():
+    model = train_model("ada", hyperparam_ensemble_dict["ada_params"], X, y)
+    assert isinstance(model, AdaBoostClassifier)
+    assert model.learning_rate in hyperparam_ensemble_dict["ada_params"]
+    assert 0 < model.n_estimators < 1000
+    assert len(model.estimators_) == model.n_estimators
+
+
+def test_adaboost_with_undersampling():
+    folds = undersample_data(RandomUnderSampler(random_state=10), X, y, scale=False)
+    model = train_model_w_undersampling(
+        "ada", hyperparam_ensemble_dict["ada_params"], *folds[:6]
+    )
     assert model.predict_proba(X).shape == (len(X), 2)

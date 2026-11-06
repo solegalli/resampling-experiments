@@ -45,9 +45,7 @@ hyperparam_ensemble_dict = {
         "min_samples_leaf": stats.randint(2, 20),
         "max_features": ("log2", 0.25, "sqrt", 1.0),
     },
-    "ada_params": {
-        "learning_rate": stats.uniform(0, 1),
-    },
+    "ada_params": (0.01, 0.1, 0.2, 0.5),  # learning rates
     "gbm_params": {
         "max_depth": (1, 2, 3, 4, 8, None),
         "learning_rate": stats.uniform(0, 1),

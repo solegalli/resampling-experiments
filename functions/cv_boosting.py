@@ -10,6 +10,9 @@ trial value is the mean AUC across folds.
 
 The best candidate is refit on the full training set for the mean number of
 rounds at which early stopping halted on the folds.
+
+AdaBoost is tuned with a small grid of learning rates instead (see
+``tune_adaboost``), using the same folds and early-stopping rule.
 """
 
 import warnings
@@ -24,6 +27,7 @@ from optuna_integration import (
     LightGBMPruningCallback,
     XGBoostPruningCallback,
 )
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import roc_auc_score
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -230,3 +234,74 @@ def tune_native_gbm(
         best_score=best.value,
         trials=study.trials_dataframe(),
     )
+
+
+def _early_stop(scores, patience):
+    """
+    Return the round (1-based) with the best score, stopping once the score
+    has not improved for ``patience`` rounds.
+    """
+    best_round, best = 0, -np.inf
+    for i, score in enumerate(scores, start=1):
+        if score > best:
+            best_round, best = i, score
+        elif i - best_round >= patience:
+            break
+    return best_round
+
+
+def _staged_auc(learning_rate, rounds, fold):
+    """Fit AdaBoost on a fold and yield the validation AUC after each round."""
+    X_tr, y_tr, w_tr, X_va, y_va = fold
+    model = AdaBoostClassifier(
+        n_estimators=rounds, learning_rate=learning_rate, random_state=10
+    )
+    model.fit(X_tr, y_tr, sample_weight=w_tr)
+    for proba in model.staged_predict_proba(X_va):
+        yield roc_auc_score(y_va, proba[:, 1])
+
+
+def tune_adaboost(
+    learning_rates,
+    folds,
+    X,
+    y,
+    sample_weight=None,
+    screen_rounds=50,
+    max_rounds=1000,
+    patience=3,
+):
+    """
+    Tune AdaBoost's learning rate and number of rounds, and refit it on (X, y).
+
+    Each learning rate is fit for ``screen_rounds`` rounds on every fold and
+    scored by the mean, across folds, of its best validation AUC. The best
+    learning rate is then fit for up to ``max_rounds`` rounds on every fold;
+    on each fold the number of rounds is set by early stopping on the
+    validation AUC. The final model is refit with the mean number of rounds.
+
+    Parameters
+    ----------
+    learning_rates : sequence of float
+    folds : list of tuples
+        ``(X_train, y_train, w_train, X_valid, y_valid)`` per fold, as in
+        ``tune_native_gbm``.
+    X, y, sample_weight : arrays
+        Training data (and weights) for the final refit.
+
+    Returns
+    -------
+    AdaBoostClassifier
+    """
+    screen = {
+        lr: np.mean([max(_staged_auc(lr, screen_rounds, fold)) for fold in folds])
+        for lr in learning_rates
+    }
+    lr = max(screen, key=screen.get)
+    rounds = [
+        _early_stop(_staged_auc(lr, max_rounds, fold), patience) for fold in folds
+    ]
+    model = AdaBoostClassifier(
+        n_estimators=int(round(np.mean(rounds))), learning_rate=lr, random_state=10
+    )
+    return model.fit(X, y, sample_weight=sample_weight)

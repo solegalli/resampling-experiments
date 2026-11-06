@@ -16,7 +16,7 @@ from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 from sklearn.model_selection import ParameterSampler, StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
 
-from functions.cv_boosting import tune_native_gbm
+from functions.cv_boosting import tune_adaboost, tune_native_gbm
 
 
 _THREAD_PARAM_BY_CLASS = {
@@ -171,18 +171,18 @@ def train_model_w_undersampling(
       - Round 2: top 10 candidates with n_estimators=300, scored on 3 folds
       - Final:   best candidate retrained with n_estimators=800 on full data
 
-    If `model` is "cat", "lgbm" or "xgb", it is tuned with
-    `functions.cv_boosting.tune_native_gbm` on the same folds, optimising
-    ROC-AUC, and refit on (Xu, yu).
+    If `model` is "ada", "cat", "lgbm" or "xgb", it is tuned on the same folds
+    with `functions.cv_boosting.tune_adaboost` (AdaBoost) or `tune_native_gbm`
+    (the others), optimising ROC-AUC, and refit on (Xu, yu).
 
     Parameters
     ----------
     model : estimator or str
-        An unfitted sklearn-compatible classifier with `n_estimators`, or a
-        library name for the native boosters.
-    params : dict or callable
-        Hyperparameter search space passed to ParameterSampler, or a
-        `suggest_fn(trial)` for the native boosters.
+        An unfitted sklearn-compatible classifier with `n_estimators`, or the
+        name of a boosting model tuned in `functions.cv_boosting`.
+    params : dict, tuple or callable
+        Hyperparameter search space passed to ParameterSampler, the learning
+        rates for AdaBoost, or a `suggest_fn(trial)` for the other boosters.
     xtrainu, ytrainu : list of arrays
         Per-fold undersampled training sets produced by `undersample_data`.
     xtest, ytest : list of arrays
@@ -203,6 +203,8 @@ def train_model_w_undersampling(
             (xtr, ytr, None, xva, yva)
             for xtr, ytr, xva, yva in zip(xtrainu, ytrainu, xtest, ytest)
         ]
+        if model == "ada":
+            return tune_adaboost(params, folds, Xu, yu)
         return tune_native_gbm(model, params, folds, Xu, yu)
 
     n_iter = 100
