@@ -80,38 +80,30 @@ def _predict(library, booster, X):
     return booster.predict(X, prediction_type="Probability")[:, 1]
 
 
-# Per-library training. Each returns (booster, number of rounds). Without a
-# validation set the model is trained for exactly `rounds` rounds (final refit);
-# with one, early stopping is applied and `trial`, if given, is used for pruning.
+# Per-library training on one fold with early stopping. Each returns
+# (booster, number of rounds); `trial`, when not None, is used for pruning.
 
 
-def _train_lgbm(params, X, y, w, rounds, patience, X_va=None, y_va=None, trial=None):
+def _train_lgbm(params, X, y, w, X_va, y_va, max_rounds, patience, trial):
     dtrain = lgb.Dataset(X, y, weight=w)
-    if X_va is None:
-        return lgb.train(params, dtrain, num_boost_round=rounds), rounds
-
     callbacks = [lgb.early_stopping(patience, verbose=False)]
     if trial:
         callbacks.append(LightGBMPruningCallback(trial, "auc"))
     booster = lgb.train(
         params,
         dtrain,
-        num_boost_round=rounds,
+        num_boost_round=max_rounds,
         valid_sets=[lgb.Dataset(X_va, y_va, reference=dtrain)],
         callbacks=callbacks,
     )
     return booster, booster.best_iteration
 
 
-def _train_xgb(params, X, y, w, rounds, patience, X_va=None, y_va=None, trial=None):
-    dtrain = xgb.DMatrix(X, label=y, weight=w)
-    if X_va is None:
-        return xgb.train(params, dtrain, num_boost_round=rounds), rounds
-
+def _train_xgb(params, X, y, w, X_va, y_va, max_rounds, patience, trial):
     booster = xgb.train(
         params,
-        dtrain,
-        num_boost_round=rounds,
+        xgb.DMatrix(X, label=y, weight=w),
+        num_boost_round=max_rounds,
         evals=[(xgb.DMatrix(X_va, label=y_va), "valid")],
         early_stopping_rounds=patience,
         callbacks=[XGBoostPruningCallback(trial, "valid-auc")] if trial else None,
@@ -122,12 +114,8 @@ def _train_xgb(params, X, y, w, rounds, patience, X_va=None, y_va=None, trial=No
     return booster[:n_rounds], n_rounds
 
 
-def _train_cat(params, X, y, w, rounds, patience, X_va=None, y_va=None, trial=None):
-    model = CatBoost({**params, "iterations": rounds})
-    if X_va is None:
-        model.fit(Pool(X, y, weight=w))
-        return model, rounds
-
+def _train_cat(params, X, y, w, X_va, y_va, max_rounds, patience, trial):
+    model = CatBoost({**params, "iterations": max_rounds})
     pruning_cb = CatBoostPruningCallback(trial, "AUC") if trial else None
     model.fit(
         Pool(X, y, weight=w),
@@ -142,6 +130,18 @@ def _train_cat(params, X, y, w, rounds, patience, X_va=None, y_va=None, trial=No
 
 
 _TRAINERS = {"lgbm": _train_lgbm, "xgb": _train_xgb, "cat": _train_cat}
+
+
+def _refit(library, params, X, y, w, rounds):
+    """Train on the full data for a fixed number of rounds."""
+    if library == "lgbm":
+        return lgb.train(params, lgb.Dataset(X, y, weight=w), num_boost_round=rounds)
+    if library == "xgb":
+        dtrain = xgb.DMatrix(X, label=y, weight=w)
+        return xgb.train(params, dtrain, num_boost_round=rounds)
+    model = CatBoost({**params, "iterations": rounds})
+    model.fit(Pool(X, y, weight=w))
+    return model
 
 
 def tune_native_gbm(
@@ -188,16 +188,17 @@ def tune_native_gbm(
         params = {**FIXED_PARAMS[library], **suggest_fn(trial)}
         scores, rounds = [], []
         for i, (X_tr, y_tr, w_tr, X_va, y_va) in enumerate(folds):
+            pruning_trial = trial if i == 0 else None  # prune on the first fold only
             booster, n = train(
                 params,
                 X_tr,
                 y_tr,
                 w_tr,
-                max_rounds,
-                patience,
                 X_va,
                 y_va,
-                trial if i == 0 else None,  # prune on the first fold only
+                max_rounds,
+                patience,
+                pruning_trial,
             )
             scores.append(roc_auc_score(y_va, _predict(library, booster, X_va)))
             rounds.append(n)
@@ -215,13 +216,13 @@ def tune_native_gbm(
 
     best = study.best_trial
     n_rounds = int(round(np.mean(best.user_attrs["best_iterations"])))
-    booster, _ = train(
+    booster = _refit(
+        library,
         {**FIXED_PARAMS[library], **best.params},
         X,
         y,
         sample_weight,
         n_rounds,
-        patience,
     )
 
     return TunedBooster(
