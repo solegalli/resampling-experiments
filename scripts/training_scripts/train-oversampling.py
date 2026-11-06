@@ -2,9 +2,10 @@
 Train classifiers with oversampling on various imbalanced datasets.
 
 Oversampling is applied once before hyperparameter search to avoid resampling
-on every candidate. Models are tuned with a manual successive halving approach
-and saved to disk for later evaluation. CatBoost, LightGBM and XGBoost are instead
-tuned with Optuna and native early stopping (see functions/cv_boosting.py).
+on every candidate. RF, AdaBoost and the scikit-learn GBM are tuned with a manual
+successive halving approach; CatBoost, LightGBM and XGBoost with Optuna and early
+stopping (see functions/cv_boosting.py). Models are saved to disk for later
+evaluation.
 """
 
 import sys
