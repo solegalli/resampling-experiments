@@ -1,13 +1,8 @@
 from scipy import stats
 
-# Search spaces for the natively trained boosters (Optuna, define-by-run).
-# They mirror the previous sklearn-wrapper spaces, using native parameter
-# names and avoiding invalid values:
-#   - learning_rate is sampled on a log scale from 0.01: values near 0 never
-#     trigger early stopping and would run to the maximum number of rounds.
-#   - max_depth=None meant "library default" in the sklearn wrappers; that is
-#     -1 (no limit) for LightGBM and 6 for XGBoost and CatBoost.
-#   - column-sampling fractions start at 0.1 (0 is invalid); num_leaves >= 2.
+# Optuna search spaces for CatBoost, LightGBM and XGBoost, with native
+# parameter names (see functions/cv_boosting.py). In LightGBM, max_depth=-1
+# means no depth limit.
 
 
 def suggest_cat_params(trial):
@@ -26,6 +21,8 @@ def suggest_lgbm_params(trial):
         "max_depth": trial.suggest_categorical("max_depth", [1, 2, 3, 4, 8, -1]),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 1.0, log=True),
         "num_leaves": trial.suggest_int("num_leaves", 2, 1023),
+        # small values allow splits on small (e.g. undersampled) datasets
+        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 1, 50, log=True),
         "feature_fraction": trial.suggest_float("feature_fraction", 0.1, 1.0),
     }
 

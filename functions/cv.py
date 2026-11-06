@@ -1,8 +1,12 @@
 import numpy as np
 from sklearn.experimental import enable_halving_search_cv
-from sklearn.model_selection import HalvingRandomSearchCV, RandomizedSearchCV
+from sklearn.model_selection import (
+    HalvingRandomSearchCV,
+    RandomizedSearchCV,
+    StratifiedKFold,
+)
 
-from functions.cv_boosting import NativeGBM, tune_native_gbm_cv
+from functions.cv_boosting import tune_native_gbm
 
 
 def get_sample_weights(y_train):
@@ -38,23 +42,27 @@ def train_model(
     and a parallel estimator both spawn joblib/loky processes. It does not change
     the fitted models, only how they are scheduled.
 
-    If ``estimator`` is a ``NativeGBM`` (CatBoost, LightGBM, XGBoost), tuning
-    is delegated to ``functions.cv_boosting.tune_native_gbm_cv``: Optuna with
-    native early stopping and successive-halving pruning. ``params`` must then
-    be a ``suggest_fn(trial)`` and ``scoring`` one of "roc_auc", "log_loss"
-    or "brier". ``refit`` and ``n_jobs`` are ignored on that path (the model is
-    always refit; boosters use all cores). Returns a ``TunedBooster``.
+    If ``estimator`` is "cat", "lgbm" or "xgb", the model is tuned with
+    ``functions.cv_boosting.tune_native_gbm`` on a 3-fold stratified split,
+    with ``params`` given as a ``suggest_fn(trial)``. ``scoring``, ``refit`` and
+    ``n_jobs`` are not used for these models, and sample weights apply to the
+    training folds and the final refit only.
     """
 
-    if isinstance(estimator, NativeGBM):
-        return tune_native_gbm_cv(
-            estimator,
-            params,
-            X_train,
-            y_train,
-            sample_weight=sample_weight,
-            scoring=scoring,
-        )
+    if isinstance(estimator, str):
+        X, y = np.asarray(X_train), np.asarray(y_train)
+        skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=10)
+        folds = [
+            (
+                X[tr],
+                y[tr],
+                None if sample_weight is None else sample_weight[tr],
+                X[va],
+                y[va],
+            )
+            for tr, va in skf.split(X, y)
+        ]
+        return tune_native_gbm(estimator, params, folds, X, y, sample_weight)
 
     search = HalvingRandomSearchCV(
         estimator=estimator,
