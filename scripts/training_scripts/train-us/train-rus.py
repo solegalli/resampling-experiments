@@ -3,9 +3,9 @@ Train classifiers with Random Undersampling on various imbalanced datasets.
 
 Undersampling is applied once before hyperparameter search to avoid resampling
 on every candidate. RF, AdaBoost and the scikit-learn GBM are tuned with a manual
-successive halving approach; CatBoost, LightGBM and XGBoost with Optuna and early
-stopping (see functions/cv_boosting.py). Models are saved to disk for later
-evaluation.
+successive halving approach (the GBM also stops adding trees early);
+CatBoost, LightGBM and XGBoost with Optuna and early stopping
+(see functions/cv_boosting.py). Models are saved to disk for later evaluation.
 """
 
 import sys

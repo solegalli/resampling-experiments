@@ -6,8 +6,8 @@ we opted for passing the sample weights vector.
 Models trained: random forests, XGBoost, LightGBM, CatBoost, AdaBoost, and
 gradient boosting machines from scikit-learn. RF, AdaBoost and the scikit-learn
 GBM are tuned with successive halving, using the number of trees as the limiting
-resource. CatBoost, LightGBM and XGBoost are tuned with Optuna and early
-stopping (see functions/cv_boosting.py).
+resource (the GBM also stops adding trees early). CatBoost, LightGBM and
+XGBoost are tuned with Optuna and early stopping (see functions/cv_boosting.py).
 """
 
 import sys

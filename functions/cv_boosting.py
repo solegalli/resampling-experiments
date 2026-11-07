@@ -150,7 +150,7 @@ def tune_native_gbm(
     sample_weight=None,
     n_trials=100,
     max_rounds=2000,
-    patience=3,
+    patience=50,
 ):
     """
     Tune a native gradient boosting model with Optuna and refit it on (X, y).
@@ -206,7 +206,7 @@ def tune_native_gbm(
         direction="maximize",
         sampler=optuna.samplers.RandomSampler(seed=10),
         pruner=optuna.pruners.SuccessiveHalvingPruner(
-            min_resource=10, reduction_factor=3
+            min_resource=50, reduction_factor=3
         ),
     )
     study.optimize(objective, n_trials=n_trials)
