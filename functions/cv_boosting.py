@@ -209,7 +209,8 @@ def tune_native_gbm(
             min_resource=50, reduction_factor=3
         ),
     )
-    study.optimize(objective, n_trials=n_trials)
+    # free the boosters of each trial (pruned trials keep them alive otherwise)
+    study.optimize(objective, n_trials=n_trials, gc_after_trial=True)
 
     best = study.best_trial
     n_rounds = int(round(np.mean(best.user_attrs["best_iterations"])))
