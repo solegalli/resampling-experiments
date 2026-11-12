@@ -9,18 +9,6 @@ This repository contains research and analysis on undersampling methods for imba
 
 We test undersampling methods across various datasets to determine if and when they add value over commonly used ensemble models (i.e., random forests, XGBoost, CatBoost, etc). This research provides empirical evidence to help practitioners decide whether undersampling is beneficial for their specific use cases.
 
-## This branch: early stopping vs successive halving
-
-The experiments in this branch test whether limiting the number of boosting rounds improves CatBoost, LightGBM and XGBoost. Previously, these models were tuned with successive halving (SH) over the number of trees. Here, they are tuned with Optuna and early stopping (patience of 50 rounds), with and without undersampling (RUS and CNN).
-
-**Conclusion**:
-
-- Without undersampling, early stopping gives the same performance as SH, with fewer trees.
-- After undersampling, early stopping improves LightGBM (RUS and CNN) and CatBoost (RUS). XGBoost does not change.
-- Even so, the undersampled models are still not better than the same models trained on the imbalanced data.
-
-See `notebooks/01-analysis-of-ensembles-expanded.ipynb`, `notebooks/05-analysis-of-rus-expanded.ipynb` and `notebooks/05-analysis-of-cnn-expanded.ipynb`.
-
 ## Results and Discussion
 
 The findings from this research are discussed in detail in our book:
