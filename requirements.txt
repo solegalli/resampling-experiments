@@ -6,6 +6,8 @@ keel_ds>=0.2.4
 lightgbm>=4.6.0
 matplotlib>=3.8
 numpy>=2.4.4
+optuna>=4.0
+optuna-integration>=4.0
 pandas>=2.0
 scipy>=1.17.1
 scikit-posthocs>=0.14.0
@@ -17,5 +19,6 @@ xgboost>=3.2.0
 
 # testing and maintenance
 pytest>=9.0.1
+pytest-mock>=3.14
 black>=26.3.1
 isort>=8.0.1

@@ -1,6 +1,12 @@
 import numpy as np
 from sklearn.experimental import enable_halving_search_cv
-from sklearn.model_selection import HalvingRandomSearchCV, RandomizedSearchCV
+from sklearn.model_selection import (
+    HalvingRandomSearchCV,
+    RandomizedSearchCV,
+    StratifiedKFold,
+)
+
+from functions.cv_boosting import tune_native_gbm
 
 
 def get_sample_weights(y_train):
@@ -35,10 +41,28 @@ def train_model(
     a nested-parallelism deadlock that can occur on macOS when the search workers
     and a parallel estimator both spawn joblib/loky processes. It does not change
     the fitted models, only how they are scheduled.
+
+    If ``estimator`` is "cat", "lgbm" or "xgb", the model is tuned with
+    ``functions.cv_boosting.tune_native_gbm`` on a 3-fold stratified split,
+    with ``params`` given as a ``suggest_fn(trial)``. ``scoring``, ``refit`` and
+    ``n_jobs`` are not used for these models, and sample weights apply to the
+    training folds and the final refit only.
     """
 
-    # CatBoostClassifier does not recognize n_estimators as hyperparameter.
-    # https://github.com/scikit-learn/scikit-learn/issues/19844
+    if isinstance(estimator, str):
+        X, y = np.asarray(X_train), np.asarray(y_train)
+        skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=10)
+        folds = [
+            (
+                X[tr],
+                y[tr],
+                None if sample_weight is None else sample_weight[tr],
+                X[va],
+                y[va],
+            )
+            for tr, va in skf.split(X, y)
+        ]
+        return tune_native_gbm(estimator, params, folds, X, y, sample_weight)
 
     search = HalvingRandomSearchCV(
         estimator=estimator,
