@@ -185,11 +185,16 @@ def load_uci_openml(dataset):
 
     elif dataset == "bank-marketing":
         data = fetch_openml(
-            name="bank-marketing", version=1, as_frame=True, parser="auto"
+            name="bank-marketing", version=1, as_frame=True, parser="liac-arff"
         )
         X = data.data
         y = (data.target == "2").astype(int)
-        X = OrdinalEncoder(encoding_method="arbitrary").fit_transform(X)
+        # Name the variables: the month column parses as dates and would
+        # otherwise be skipped by the encoder.
+        X = OrdinalEncoder(
+            encoding_method="arbitrary",
+            variables=list(X.select_dtypes("category").columns),
+        ).fit_transform(X)
 
     elif dataset == "adult":
         adult = fetch_openml("adult", version=2, as_frame=True, parser="auto")
