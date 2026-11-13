@@ -9,7 +9,7 @@ We tried to evaluate open tabular foundation models on the 17 datasets where the
 | Model | Result |
 |---|---|
 | TabPFN-2 | Ran on the 13 datasets within its limit of 10,000 training rows. It can't be used on the other 4. |
-| TabICL (v2 checkpoint) | Ran on the 4 smallest datasets, then ran out of memory on `secom` (1,096 rows × 478 features). Not completed. |
+| TabICLv2 (`tabicl` 2.2.0, checkpoint `tabicl-classifier-v2-20260212.ckpt`) | Ran on the 4 smallest datasets, then ran out of memory on `secom` (1,096 rows × 478 features). Not completed. |
 | TabDPT | Ran on 16 of 17 datasets at low CPU priority, without memory problems: 1.5–25 s per small dataset, and 4–9 minutes on `default_credit`, `bank-marketing` and `adult` (21k–34k training rows). Stopped after 10 minutes on `diabetes130` (71k training rows, 30k test rows). |
 | LimiX-2M | Cannot run on macOS. |
 | AutoGluon | Cannot be installed on Python 3.14. |
@@ -53,7 +53,7 @@ The licenses vary, and several are not open source. Please check them before pub
 |---|---|---|
 | TabPFN-2 | [Prior Labs License](https://huggingface.co/Prior-Labs/TabPFN-v2-clf/blob/main/LICENSE.txt) (Apache 2.0 with attribution) | [Apache-2.0](https://github.com/PriorLabs/TabPFN/blob/main/LICENSE) |
 | TabPFN-2.5, 2.6, 3, 3.5 | Non-commercial, gated behind a Prior Labs login (e.g. [3.5](https://huggingface.co/Prior-Labs/tabpfn_3_5/blob/main/LICENSE)). Not used. | as above |
-| TabICL | Not stated separately | [BSD-3](https://github.com/soda-inria/tabicl/blob/main/LICENSE) |
+| TabICLv2 | Not stated separately | [BSD-3](https://github.com/soda-inria/tabicl/blob/main/LICENSE) |
 | TabDPT | [Apache-2.0](https://huggingface.co/Layer6/TabDPT) | [Apache-2.0](https://github.com/layer6ai-labs/TabDPT-inference/blob/main/LICENSE) |
 | LimiX-2M | [LimiX-2M license](https://huggingface.co/stableai-org/LimiX-2M/blob/main/LICENSE.txt) (commercial use needs authorization) | [Stable AI License](https://github.com/limix-ldm-ai/LimiX/blob/main/LICENSE.txt) (derived from Apache 2.0) |
 | AutoGluon | n/a | [Apache-2.0](https://github.com/autogluon/autogluon/blob/master/LICENSE) |
