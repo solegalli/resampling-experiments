@@ -94,7 +94,16 @@ def calculate_classif_metrics(y, prob):
 def evaluate_model_on_test_set(search, X, y):
     """
     Evaluate a fitted model on the test set using 5 bootstrap samples (60%,
-    with replacement) to estimate dispersion.
+    with replacement) to estimate dispersion. The model predicts the test set
+    once, and the probabilities are bootstrapped (see evaluate_probabilities).
+    """
+    return evaluate_probabilities(y, search.predict_proba(X)[:, 1])
+
+
+def evaluate_probabilities(y, prob):
+    """
+    Evaluate predicted probabilities of the positive class on the test set
+    using 5 bootstrap samples (60%, with replacement) to estimate dispersion.
 
     Returns a flat list:
         [mean_roc_auc, std_roc_auc,
@@ -114,9 +123,9 @@ def evaluate_model_on_test_set(search, X, y):
     """
     # To obtain a dispersion value, we take bootstrapped samples
     # of a portion of the test set.
-    X = np.asarray(X)
     y = np.asarray(y)
-    n = int(0.6 * len(X))
+    prob_all = np.asarray(prob)
+    n = int(0.6 * len(y))
 
     roc, ap, precision, recall, f1score, mcc, ba, brier, gmean, thresh = (
         [],
@@ -132,9 +141,8 @@ def evaluate_model_on_test_set(search, X, y):
     )
 
     for seed in range(1, 6):
-        idx = np.random.default_rng(seed).choice(len(X), size=n, replace=True)
-        xs, ys = X[idx], y[idx]
-        prob = search.predict_proba(xs)[:, 1]
+        idx = np.random.default_rng(seed).choice(len(y), size=n, replace=True)
+        ys, prob = y[idx], prob_all[idx]
         preds, t = predict_class(ys, prob)
 
         roc.append(roc_auc_score(ys, prob))
